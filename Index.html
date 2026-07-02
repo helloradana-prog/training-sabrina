@@ -1,8 +1,225 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Dumbbell, BookOpen, User, LineChart, ChevronDown, Check, Info, Flame } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Treino · Sabrina</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Manrope:wght@400;500;600;700;800&display=swap');
 
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Manrope', sans-serif;
+    background: radial-gradient(circle at 50% 0%, #F3EEE2 0%, #EFEAE0 60%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+  }
+  input, select, button { font-family: 'Manrope', sans-serif; outline: none; }
+  input::placeholder { color: #B9A9CC; }
+  button { cursor: pointer; }
+
+  :root {
+    --cream: #FAF6EC;
+    --ink: #241333;
+    --purple: #4B1D6E;
+    --purple-deep: #2E1049;
+    --purple-soft: #EDE3F5;
+    --yellow: #F8C300;
+    --yellow-soft: #FDF0BE;
+    --muted: #8577A0;
+    --muted-light: #B09FC7;
+    --border: #E4D8F0;
+  }
+
+  .phone {
+    width: 100%; max-width: 460px; min-height: 100vh; background: var(--cream);
+    position: relative; display: flex; flex-direction: column;
+    box-shadow: 0 0 60px rgba(46,16,73,0.12);
+  }
+
+  .topbar {
+    background: var(--purple-deep); padding: 18px 18px 16px 18px;
+    border-bottom: 3px solid var(--yellow); flex-shrink: 0;
+  }
+  .topbar-title {
+    font-family: 'Archivo Black', sans-serif; color: var(--cream); font-size: 22px; line-height: 1.1;
+  }
+
+  .content { flex: 1; overflow-y: auto; padding: 16px 18px 100px 18px; }
+
+  .bottomnav {
+    position: sticky; bottom: 0; left: 0; right: 0; background: var(--cream);
+    border-top: 1px solid var(--purple-soft); display: flex; flex-shrink: 0;
+    box-shadow: 0 -6px 18px rgba(46,16,73,0.06);
+  }
+  .navbtn {
+    flex: 1; border: none; background: transparent; padding: 10px 0 8px 0;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  .navbtn .icon { font-size: 19px; line-height: 1; opacity: 0.55; }
+  .navbtn.active .icon { opacity: 1; }
+  .navbtn .lbl { font-size: 10px; font-weight: 600; color: var(--muted-light); }
+  .navbtn.active .lbl { font-weight: 800; color: var(--purple); }
+  .navdot { width: 4px; height: 4px; border-radius: 2px; background: var(--yellow); margin-top: 1px; }
+
+  .card {
+    background: #FFFFFF; border-radius: 16px; padding: 16px; border: 1px solid var(--border);
+    box-shadow: 0 2px 10px rgba(46,16,73,0.04);
+  }
+  .section-label {
+    font-family: 'Archivo Black', sans-serif; font-size: 11px; letter-spacing: 1.5px; color: var(--purple);
+    margin-bottom: 10px; margin-top: 22px; text-transform: uppercase;
+  }
+  .section-label.no-top { margin-top: 0; }
+
+  .tip-banner {
+    background: var(--purple); border-radius: 16px; padding: 14px 16px; display: flex; gap: 10px;
+    align-items: flex-start; margin-bottom: 18px; box-shadow: 0 4px 14px rgba(75,29,110,0.25);
+  }
+  .tip-banner .icon { flex-shrink: 0; margin-top: 1px; font-size: 16px; }
+  .tip-label { font-family: 'Archivo Black', sans-serif; color: var(--yellow); font-size: 10.5px; letter-spacing: 1px; margin-bottom: 3px; }
+  .tip-text { color: #F5EEFB; font-size: 13px; line-height: 1.45; }
+
+  .scoreboard {
+    background: var(--purple-deep); border-radius: 18px; padding: 16px; position: relative; overflow: hidden; margin-bottom: 18px;
+  }
+  .scoreboard::before {
+    content: ''; position: absolute; top: -30px; right: -30px; width: 100px; height: 100px;
+    border-radius: 50%; background: rgba(248,195,0,0.08);
+  }
+  .scoreboard-label { color: #C9B8DE; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 4px; }
+  .scoreboard-num { font-family: 'Archivo Black', sans-serif; color: var(--yellow); font-size: 38px; line-height: 1; }
+  .scoreboard-total { color: #C9B8DE; font-size: 14px; font-weight: 700; margin-left: 8px; }
+  .scoreboard-dots { display: flex; gap: 4px; margin-top: 12px; }
+  .dot { flex: 1; height: 8px; border-radius: 4px; border: none; background: rgba(255,255,255,0.12); }
+  .dot.past { background: rgba(248,195,0,0.35); }
+  .dot.current { background: var(--yellow); }
+
+  .day-pills { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 2px; }
+  .pill {
+    flex-shrink: 0; display: flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 20px;
+    border: 1.5px solid var(--border); background: #FFFFFF; font-weight: 800; font-size: 12.5px; color: var(--purple);
+  }
+  .pill.active { border-color: var(--purple); background: var(--purple); color: var(--yellow); }
+  .pill.complete:not(.active) { border-color: var(--yellow); }
+
+  .row-summary { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .row-summary .count { font-size: 12.5px; color: var(--muted); font-weight: 700; }
+  .row-summary .done-flag { display: flex; align-items: center; gap: 4px; color: #B78A00; font-size: 12px; font-weight: 800; }
+
+  .exercise-row { background: #FFFFFF; border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-bottom: 10px; }
+  .exercise-row.checked { border-color: var(--yellow); }
+  .exercise-top { display: flex; align-items: flex-start; gap: 10px; }
+  .checkbox {
+    width: 24px; height: 24px; border-radius: 7px; flex-shrink: 0; margin-top: 1px;
+    border: 2px solid #D9CBEB; background: transparent; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: var(--purple-deep); font-weight: 900; padding: 0;
+  }
+  .checkbox.checked { border-color: var(--yellow); background: var(--yellow); }
+  .ex-name { font-weight: 800; font-size: 13.5px; color: var(--ink); }
+  .ex-name.checked { text-decoration: line-through; opacity: 0.55; }
+  .ex-meta { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+  .ex-obj { font-size: 11px; color: var(--muted-light); margin-top: 1px; }
+  .ex-weight-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; margin-left: 34px; }
+  .ex-weight-row input {
+    width: 100px; border: 1.5px solid var(--border); border-radius: 9px; padding: 6px 9px;
+    font-size: 12.5px; font-weight: 700; color: var(--ink);
+  }
+  .ex-prev { font-size: 11px; color: var(--muted-light); }
+
+  .cardio-card { display: flex; align-items: center; gap: 12px; }
+  .cardio-icon {
+    width: 40px; height: 40px; border-radius: 10px; background: var(--yellow-soft);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px;
+  }
+  .cardio-dur { font-weight: 800; font-size: 13.5px; color: var(--ink); }
+  .cardio-desc { font-size: 12px; color: var(--muted); }
+
+  .rpe-row { display: flex; justify-content: space-between; padding: 7px 0; border-top: 1px solid #F3EDFA; }
+  .rpe-row:first-child { border-top: none; }
+  .rpe-code { font-weight: 800; font-size: 12.5px; color: var(--purple); }
+  .rpe-label { font-size: 12.5px; color: #6B5A80; }
+
+  .guide-item { background: #FFFFFF; border-radius: 14px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 8px; }
+  .guide-item.open { border-color: var(--purple); }
+  .guide-header {
+    width: 100%; display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px; background: transparent; border: none; text-align: left;
+  }
+  .guide-name { font-weight: 800; font-size: 13.5px; color: var(--ink); }
+  .guide-foco { font-size: 11.5px; color: var(--muted); }
+  .chevron { font-size: 14px; color: var(--purple); transition: transform .2s; flex-shrink: 0; }
+  .chevron.rot { transform: rotate(180deg); }
+  .guide-body { padding: 0 14px 14px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .guide-line-label { font-family: 'Archivo Black', sans-serif; font-size: 9.5px; letter-spacing: 1px; margin-bottom: 2px; }
+  .guide-line-text { font-size: 12.5px; color: #4A3B5C; line-height: 1.45; }
+
+  .info-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #F3EDFA; }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+  .info-value { font-size: 13px; font-weight: 700; color: var(--ink); text-align: right; max-width: 62%; }
+
+  .field { margin-bottom: 12px; }
+  .field-label { font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 5px; }
+  .field-box { display: flex; align-items: center; border: 1.5px solid var(--border); border-radius: 10px; padding: 9px 12px; }
+  .field-box input { border: none; flex: 1; min-width: 0; font-size: 13.5px; font-weight: 700; color: var(--ink); background: transparent; }
+  .field-suffix { font-size: 12px; color: var(--muted-light); font-weight: 700; flex-shrink: 0; margin-left: 6px; }
+
+  .profile-header { background: var(--purple-deep); border-radius: 16px; padding: 16px; margin-bottom: 18px; display: flex; align-items: center; gap: 12px; }
+  .profile-avatar { width: 46px; height: 46px; border-radius: 50%; background: var(--yellow); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .profile-avatar span { font-family: 'Archivo Black', sans-serif; color: var(--purple-deep); font-size: 18px; }
+  .profile-name { color: #fff; font-weight: 800; font-size: 14.5px; }
+  .profile-age { color: #C9B8DE; font-size: 11.5px; }
+
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-box { background: var(--purple-soft); border-radius: 12px; padding: 12px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+  .stat-label { font-size: 10.5px; font-weight: 700; color: var(--purple); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-value { font-family: 'Archivo Black', sans-serif; font-size: 19px; color: var(--purple-deep); line-height: 1; }
+  .stat-suffix { font-family: 'Manrope', sans-serif; font-size: 11px; font-weight: 700; color: var(--muted); margin-left: 2px; }
+
+  .week-item { background: #fff; border-radius: 14px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 8px; }
+  .week-item.open { border-color: var(--purple); }
+  .week-header { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: transparent; border: none; text-align: left; }
+  .week-badge { width: 30px; height: 30px; border-radius: 8px; background: var(--purple-soft); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .week-badge.full { background: var(--yellow); }
+  .week-badge span { font-family: 'Archivo Black', sans-serif; font-size: 12px; color: var(--purple); }
+  .week-title { font-weight: 800; font-size: 13.5px; color: var(--ink); }
+  .week-fill { font-size: 11px; color: var(--muted-light); font-weight: 700; }
+  .week-body { padding: 2px 14px 16px 14px; display: flex; flex-direction: column; gap: 12px; }
+  .aval-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .aval-label { font-size: 12.5px; font-weight: 700; color: #4A3B5C; }
+  .scale-btns { display: flex; gap: 4px; }
+  .scale-btn {
+    width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--purple); background: transparent;
+    color: var(--purple); font-weight: 700; font-size: 12px;
+  }
+  .scale-btn.active { background: var(--purple); color: var(--yellow); }
+  .aval-row input[type=number] {
+    width: 70px; border: 1.5px solid var(--border); border-radius: 8px; padding: 6px 9px; font-size: 12.5px; font-weight: 700; color: var(--ink);
+  }
+
+  .toast {
+    position: fixed; bottom: 86px; left: 50%; transform: translateX(-50%) translateY(20px);
+    opacity: 0; transition: all .25s ease; background: #241333; color: var(--yellow);
+    padding: 8px 16px; border-radius: 20px; font-size: 12.5px; font-weight: 700;
+    display: flex; align-items: center; gap: 6px; z-index: 50; box-shadow: 0 6px 18px rgba(36,19,51,.35);
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .loading-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; color: #7A6690; font-size: 14px; }
+
+  ::-webkit-scrollbar { width: 0px; height: 0px; }
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
 // ---------------------------------------------------------------------------
-// DATA — extracted from the training sheet
+// DATA — extraído da planilha de treino
 // ---------------------------------------------------------------------------
 
 const TOTAL_WEEKS = 12;
@@ -19,9 +236,7 @@ const DICA_GERAL = 'Mantenha a respiração controlada para a contração do abd
 
 const WORKOUTS = [
   {
-    id: 'a',
-    letter: 'A',
-    title: 'Costas',
+    id: 'a', letter: 'A', title: 'Costas',
     exercises: [
       { id: 'a1', name: 'Mobilidade', series: '2 séries', rest: '45s', intensity: 'Leve', objective: 'Articulações', trackWeight: false },
       { id: 'a2', name: 'Puxada alta c/ barra', series: '3x10', rest: '1 min', intensity: 'RPE 7', objective: 'Desenvolvimento das costas' },
@@ -32,9 +247,7 @@ const WORKOUTS = [
     cardio: { duration: '30 min', desc: 'Bike HIIT — moderado (30s forte / 90s leve)' },
   },
   {
-    id: 'b',
-    letter: 'B',
-    title: 'Pernas',
+    id: 'b', letter: 'B', title: 'Pernas',
     exercises: [
       { id: 'b1', name: 'Mobilidade', series: '2 séries', rest: '45s', intensity: 'Leve', objective: 'Articulações', trackWeight: false },
       { id: 'b2', name: 'Cadeira extensora', series: '4x10', rest: '1 min', intensity: 'RPE 7', objective: 'Isolamento de quadríceps' },
@@ -46,9 +259,7 @@ const WORKOUTS = [
     cardio: { duration: '30 min', desc: 'Bike HIIT — moderado (30s forte / 90s leve)' },
   },
   {
-    id: 'c',
-    letter: 'C',
-    title: 'Peito, ombro e braço',
+    id: 'c', letter: 'C', title: 'Peito, ombro e braço',
     exercises: [
       { id: 'c1', name: 'Mobilidade', series: '2 séries', rest: '45s', intensity: 'Leve', objective: 'Articulações', trackWeight: false },
       { id: 'c2', name: 'Peck deck', series: '3x10', rest: '1 min', intensity: 'RPE 7', objective: 'Isolamento do peitoral' },
@@ -69,9 +280,7 @@ const WORKOUTS = [
     cardio: { duration: '15 min', desc: 'Caminhada inclinada — velocidade 5 km/h' },
   },
   {
-    id: 'd',
-    letter: 'D',
-    title: 'Funcional + Cardio',
+    id: 'd', letter: 'D', title: 'Funcional + Cardio',
     exercises: [
       { id: 'd1', name: 'Mobilidade', series: '2 séries', rest: '45s', intensity: 'Leve', objective: 'Articulações', trackWeight: false },
       { id: 'd2', name: 'Caminhada inclinada', series: '5 min', rest: '—', intensity: 'Leve', objective: 'Ativar circulação', trackWeight: false },
@@ -120,15 +329,9 @@ const GUIDE = [
 ];
 
 const DEFAULT_PERFIL = {
-  nome: 'Sabrina Tolentino de Macedo',
-  idade: '26',
-  pesoAtual: '79',
-  cintura: '88',
-  quadril: '118',
-  biceps: '29',
-  coxa: '63',
-  objetivo: 'Emagrecimento / massa muscular',
-  obstaculo: 'Procrastinação',
+  nome: 'Sabrina Tolentino de Macedo', idade: '26', pesoAtual: '79',
+  cintura: '88', quadril: '118', biceps: '29', coxa: '63',
+  objetivo: 'Emagrecimento / massa muscular', obstaculo: 'Procrastinação',
 };
 
 const AVAL_FIELDS = [
@@ -142,760 +345,444 @@ const AVAL_FIELDS = [
 ];
 
 // ---------------------------------------------------------------------------
-// STORAGE HELPERS
+// STORAGE — usa window.storage (compartilhado) quando disponível, com
+// fallback para localStorage se o arquivo for aberto fora do Claude.
 // ---------------------------------------------------------------------------
 
 async function loadKey(key, fallback) {
   try {
-    const res = await window.storage.get(key, true);
-    return res ? JSON.parse(res.value) : fallback;
-  } catch (e) {
-    return fallback;
-  }
+    if (window.storage && window.storage.get) {
+      const res = await window.storage.get(key, true);
+      return res ? JSON.parse(res.value) : fallback;
+    }
+    const v = localStorage.getItem(key);
+    return v ? JSON.parse(v) : fallback;
+  } catch (e) { return fallback; }
 }
 
 async function saveKey(key, value) {
   try {
-    await window.storage.set(key, JSON.stringify(value), true);
+    if (window.storage && window.storage.set) {
+      await window.storage.set(key, JSON.stringify(value), true);
+    } else {
+      localStorage.setItem(key, JSON.stringify(value));
+    }
     return true;
-  } catch (e) {
-    return false;
-  }
+  } catch (e) { return false; }
 }
 
 // ---------------------------------------------------------------------------
-// UI PRIMITIVES
+// STATE
 // ---------------------------------------------------------------------------
 
-function ScaleInput({ value, onChange }) {
-  const opts = [1, 2, 3, 4, 5];
-  return (
-    <div style={{ display: 'flex', gap: 4 }}>
-      {opts.map((n) => (
-        <button
-          key={n}
-          onClick={() => onChange(n)}
-          style={{
-            width: 26, height: 26, borderRadius: '50%', border: '1.5px solid #4B1D6E',
-            background: value === n ? '#4B1D6E' : 'transparent',
-            color: value === n ? '#F8C300' : '#4B1D6E',
-            fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: 12,
-            cursor: 'pointer', transition: 'all .15s',
-          }}
-        >
-          {n}
-        </button>
-      ))}
-    </div>
-  );
+const state = {
+  tab: 'treinos',
+  week: 1,
+  activeDay: 'a',
+  perfil: JSON.parse(JSON.stringify(DEFAULT_PERFIL)),
+  checkins: {},
+  avaliacao: {},
+  openGuide: null,
+  openWeekEval: 1,
+  loading: true,
+};
+
+let saveTimers = {};
+function debouncedSave(key, value, delay) {
+  clearTimeout(saveTimers[key]);
+  saveTimers[key] = setTimeout(async () => {
+    await saveKey(key, value);
+    flashToast();
+  }, delay || 400);
 }
 
-function SaveToast({ show }) {
-  return (
-    <div style={{
-      position: 'fixed', bottom: 86, left: '50%', transform: `translateX(-50%) translateY(${show ? '0' : '20px'})`,
-      opacity: show ? 1 : 0, transition: 'all .25s ease', background: '#241333', color: '#F8C300',
-      padding: '8px 16px', borderRadius: 20, fontSize: 12.5, fontFamily: 'Manrope, sans-serif', fontWeight: 700,
-      display: 'flex', alignItems: 'center', gap: 6, zIndex: 50, boxShadow: '0 6px 18px rgba(36,19,51,.35)',
-      pointerEvents: 'none',
-    }}>
-      <Check size={14} /> Salvo
-    </div>
-  );
+let toastTimer = null;
+function flashToast() {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1200);
 }
 
 // ---------------------------------------------------------------------------
-// MAIN APP
+// HELPERS
 // ---------------------------------------------------------------------------
 
-export default function App() {
-  const [tab, setTab] = useState('treinos');
-  const [loading, setLoading] = useState(true);
-  const [perfil, setPerfil] = useState(DEFAULT_PERFIL);
-  const [checkins, setCheckins] = useState({});
-  const [avaliacao, setAvaliacao] = useState({});
-  const [week, setWeek] = useState(1);
-  const [activeDay, setActiveDay] = useState('a');
-  const [toast, setToast] = useState(false);
-  const toastTimer = useRef(null);
-  const saveTimer = useRef({});
+function getExState(dayId, exId) {
+  return (state.checkins[state.week] && state.checkins[state.week][dayId] && state.checkins[state.week][dayId][exId]) || { checked: false, carga: '' };
+}
 
-  useEffect(() => {
-    (async () => {
-      const [p, c, a] = await Promise.all([
-        loadKey('sabrina-perfil', DEFAULT_PERFIL),
-        loadKey('sabrina-checkins', {}),
-        loadKey('sabrina-avaliacao', {}),
-      ]);
-      setPerfil(p);
-      setCheckins(c);
-      setAvaliacao(a);
-      setLoading(false);
-    })();
-  }, []);
+function dayCompletion(dayId, wk) {
+  const w = wk || state.week;
+  const workout = WORKOUTS.find(x => x.id === dayId);
+  const total = workout.exercises.length;
+  const wkData = state.checkins[w] && state.checkins[w][dayId];
+  const done = workout.exercises.filter(ex => wkData && wkData[ex.id] && wkData[ex.id].checked).length;
+  return { done, total };
+}
 
-  const flashToast = useCallback(() => {
-    setToast(true);
-    clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(false), 1200);
-  }, []);
+function prevCarga(dayId, exId) {
+  if (state.week <= 1) return null;
+  const wkData = state.checkins[state.week - 1] && state.checkins[state.week - 1][dayId];
+  const v = wkData && wkData[exId] && wkData[exId].carga;
+  return v || null;
+}
 
-  const persistCheckins = useCallback((next) => {
-    setCheckins(next);
-    clearTimeout(saveTimer.current.checkins);
-    saveTimer.current.checkins = setTimeout(async () => {
-      await saveKey('sabrina-checkins', next);
-      flashToast();
-    }, 400);
-  }, [flashToast]);
+function esc(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 
-  const persistPerfil = useCallback((next) => {
-    setPerfil(next);
-    clearTimeout(saveTimer.current.perfil);
-    saveTimer.current.perfil = setTimeout(async () => {
-      await saveKey('sabrina-perfil', next);
-      flashToast();
-    }, 500);
-  }, [flashToast]);
+// ---------------------------------------------------------------------------
+// ACTIONS
+// ---------------------------------------------------------------------------
 
-  const persistAvaliacao = useCallback((next) => {
-    setAvaliacao(next);
-    clearTimeout(saveTimer.current.aval);
-    saveTimer.current.aval = setTimeout(async () => {
-      await saveKey('sabrina-avaliacao', next);
-      flashToast();
-    }, 400);
-  }, [flashToast]);
+function setTab(t) { state.tab = t; render(); }
 
-  function getExState(dayId, exId) {
-    return checkins?.[week]?.[dayId]?.[exId] || { checked: false, carga: '' };
+function setWeek(w) { state.week = w; render(); }
+
+function setActiveDay(d) { state.activeDay = d; render(); }
+
+function toggleExercise(dayId, exId) {
+  const cur = getExState(dayId, exId);
+  if (!state.checkins[state.week]) state.checkins[state.week] = {};
+  if (!state.checkins[state.week][dayId]) state.checkins[state.week][dayId] = {};
+  state.checkins[state.week][dayId][exId] = { ...cur, checked: !cur.checked };
+  debouncedSave('sabrina-checkins', state.checkins, 250);
+  render();
+}
+
+function setCarga(dayId, exId, carga) {
+  const cur = getExState(dayId, exId);
+  if (!state.checkins[state.week]) state.checkins[state.week] = {};
+  if (!state.checkins[state.week][dayId]) state.checkins[state.week][dayId] = {};
+  state.checkins[state.week][dayId][exId] = { ...cur, carga };
+  debouncedSave('sabrina-checkins', state.checkins, 500);
+  // não re-renderiza para não perder o foco do campo
+}
+
+function setPeso(v) {
+  state.perfil.pesoAtual = v;
+  debouncedSave('sabrina-perfil', state.perfil, 500);
+}
+
+function toggleGuide(i) { state.openGuide = state.openGuide === i ? null : i; render(); }
+
+function toggleWeekEval(w) { state.openWeekEval = state.openWeekEval === w ? null : w; render(); }
+
+function updateAval(w, field, value) {
+  if (!state.avaliacao[w]) state.avaliacao[w] = {};
+  state.avaliacao[w][field] = value;
+  debouncedSave('sabrina-avaliacao', state.avaliacao, 350);
+  render();
+}
+
+// ---------------------------------------------------------------------------
+// RENDER: TREINOS
+// ---------------------------------------------------------------------------
+
+function renderTreinos() {
+  const workout = WORKOUTS.find(w => w.id === state.activeDay);
+  const { done, total } = dayCompletion(state.activeDay);
+
+  let dots = '';
+  for (let w = 1; w <= TOTAL_WEEKS; w++) {
+    const cls = w === state.week ? 'current' : (w < state.week ? 'past' : '');
+    dots += `<button class="dot ${cls}" onclick="setWeek(${w})" title="Semana ${w}"></button>`;
   }
 
-  function toggleExercise(dayId, exId) {
-    const cur = getExState(dayId, exId);
-    const next = {
-      ...checkins,
-      [week]: {
-        ...checkins[week],
-        [dayId]: { ...(checkins[week]?.[dayId] || {}), [exId]: { ...cur, checked: !cur.checked } },
-      },
-    };
-    persistCheckins(next);
+  let pills = '';
+  WORKOUTS.forEach(w => {
+    const active = w.id === state.activeDay;
+    const { done: d, total: t } = dayCompletion(w.id, state.week);
+    const complete = d === t;
+    pills += `<button class="pill ${active ? 'active' : ''} ${complete ? 'complete' : ''}" onclick="setActiveDay('${w.id}')">
+      ${complete && !active ? '✓ ' : ''}${w.letter} · ${esc(w.title)}
+    </button>`;
+  });
+
+  let exercisesHtml = workout.exercises.map(ex => exerciseRowHtml(workout.id, ex, false)).join('');
+
+  let funcionalHtml = '';
+  if (workout.funcional) {
+    funcionalHtml = `
+      <div class="section-label">Funcional · ${esc(workout.funcional.note)}</div>
+      ${workout.funcional.exercises.map(ex => exerciseRowHtml(workout.id, ex, true)).join('')}
+    `;
   }
 
-  function setCarga(dayId, exId, carga) {
-    const cur = getExState(dayId, exId);
-    const next = {
-      ...checkins,
-      [week]: {
-        ...checkins[week],
-        [dayId]: { ...(checkins[week]?.[dayId] || {}), [exId]: { ...cur, carga } },
-      },
-    };
-    persistCheckins(next);
-  }
-
-  function prevCarga(dayId, exId) {
-    if (week <= 1) return null;
-    const v = checkins?.[week - 1]?.[dayId]?.[exId]?.carga;
-    return v ? v : null;
-  }
-
-  function dayCompletion(dayId, w) {
-    const wk = w || week;
-    const workout = WORKOUTS.find((x) => x.id === dayId);
-    const total = workout.exercises.length;
-    const done = workout.exercises.filter((ex) => checkins?.[wk]?.[dayId]?.[ex.id]?.checked).length;
-    return { done, total };
-  }
-
-  function updateAval(w, field, value) {
-    const next = { ...avaliacao, [w]: { ...(avaliacao[w] || {}), [field]: value } };
-    persistAvaliacao(next);
-  }
-
-  if (loading) {
-    return (
-      <div style={{ ...styles.app, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Fonts />
-        <div style={{ fontFamily: 'Manrope, sans-serif', color: '#7A6690', fontSize: 14 }}>Carregando…</div>
+  return `
+    <div class="tip-banner">
+      <span class="icon">ℹ️</span>
+      <div>
+        <div class="tip-label">DICA IMPORTANTE</div>
+        <div class="tip-text">${esc(DICA_GERAL)}</div>
       </div>
-    );
-  }
+    </div>
 
-  return (
-    <div style={styles.app}>
-      <Fonts />
-      <div style={styles.phone}>
-        <TopBar tab={tab} />
-        <div style={styles.content}>
-          {tab === 'treinos' && (
-            <Treinos
-              week={week} setWeek={setWeek}
-              activeDay={activeDay} setActiveDay={setActiveDay}
-              getExState={getExState} toggleExercise={toggleExercise}
-              setCarga={setCarga} prevCarga={prevCarga}
-              dayCompletion={dayCompletion}
-            />
-          )}
-          {tab === 'guia' && <Guia />}
-          {tab === 'perfil' && <Perfil perfil={perfil} onChange={persistPerfil} />}
-          {tab === 'progresso' && (
-            <Progresso avaliacao={avaliacao} updateAval={updateAval} />
-          )}
+    <div class="scoreboard">
+      <div class="scoreboard-label">SEMANA ATUAL</div>
+      <div><span class="scoreboard-num">${String(state.week).padStart(2, '0')}</span><span class="scoreboard-total">/ ${TOTAL_WEEKS}</span></div>
+      <div class="scoreboard-dots">${dots}</div>
+    </div>
+
+    <div class="day-pills">${pills}</div>
+
+    <div class="row-summary">
+      <span class="count">${done}/${total} concluídos</span>
+      ${done === total ? '<span class="done-flag">🔥 treino completo</span>' : ''}
+    </div>
+
+    <div style="margin-top:10px;">${exercisesHtml}</div>
+
+    ${funcionalHtml}
+
+    <div class="section-label">Cardio</div>
+    <div class="card cardio-card">
+      <div class="cardio-icon">🔥</div>
+      <div>
+        <div class="cardio-dur">${esc(workout.cardio.duration)}</div>
+        <div class="cardio-desc">${esc(workout.cardio.desc)}</div>
+      </div>
+    </div>
+  `;
+}
+
+function exerciseRowHtml(dayId, ex, noWeight) {
+  const st = getExState(dayId, ex.id);
+  const showWeight = !(ex.trackWeight === false || noWeight);
+  const prev = prevCarga(dayId, ex.id);
+  return `
+    <div class="exercise-row ${st.checked ? 'checked' : ''}">
+      <div class="exercise-top">
+        <button class="checkbox ${st.checked ? 'checked' : ''}" onclick="toggleExercise('${dayId}','${ex.id}')">${st.checked ? '✓' : ''}</button>
+        <div style="flex:1;">
+          <div class="ex-name ${st.checked ? 'checked' : ''}">${esc(ex.name)}</div>
+          <div class="ex-meta">${esc(ex.series)}${ex.rest ? ' · descanso ' + esc(ex.rest) : ''}${ex.intensity ? ' · ' + esc(ex.intensity) : ''}</div>
+          ${ex.objective ? `<div class="ex-obj">${esc(ex.objective)}</div>` : ''}
         </div>
-        <BottomNav tab={tab} setTab={setTab} />
-        <SaveToast show={toast} />
+      </div>
+      ${showWeight ? `
+        <div class="ex-weight-row">
+          <input type="text" inputmode="decimal" placeholder="carga (kg)" value="${esc(st.carga)}" oninput="setCarga('${dayId}','${ex.id}', this.value)" />
+          ${prev ? `<span class="ex-prev">semana anterior: ${esc(prev)}kg</span>` : ''}
+        </div>` : ''}
+    </div>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// RENDER: GUIA
+// ---------------------------------------------------------------------------
+
+function renderGuia() {
+  let rpeHtml = RPE_SCALE.map(r => `
+    <div class="rpe-row"><span class="rpe-code">${esc(r.code)}</span><span class="rpe-label">${esc(r.label)}</span></div>
+  `).join('');
+
+  let guideHtml = GUIDE.map((g, i) => {
+    const isOpen = state.openGuide === i;
+    return `
+      <div class="guide-item ${isOpen ? 'open' : ''}">
+        <button class="guide-header" onclick="toggleGuide(${i})">
+          <div>
+            <div class="guide-name">${esc(g.name)}</div>
+            <div class="guide-foco">${esc(g.foco)}</div>
+          </div>
+          <span class="chevron ${isOpen ? 'rot' : ''}">▾</span>
+        </button>
+        ${isOpen ? `
+          <div class="guide-body">
+            <div><div class="guide-line-label" style="color:var(--purple);">COMO FAZER</div><div class="guide-line-text">${esc(g.como)}</div></div>
+            <div><div class="guide-line-label" style="color:#B23A3A;">ERRO COMUM</div><div class="guide-line-text">${esc(g.erro)}</div></div>
+            <div><div class="guide-line-label" style="color:#B78A00;">DICA PRÁTICA</div><div class="guide-line-text">${esc(g.dica)}</div></div>
+          </div>` : ''}
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="card" style="background:var(--purple-soft); border:none; margin-bottom:16px;">
+      <div style="font-size:12.5px; color:var(--purple); line-height:1.5;">
+        Toque em um exercício para ver como executar, o foco muscular, o erro mais comum e uma dica prática.
       </div>
     </div>
-  );
+
+    <div class="section-label no-top">Escala de intensidade</div>
+    <div class="card" style="margin-bottom:16px;">${rpeHtml}</div>
+
+    <div class="section-label no-top">Exercícios</div>
+    ${guideHtml}
+  `;
 }
 
 // ---------------------------------------------------------------------------
-// FONTS & GLOBAL STYLES
+// RENDER: PERFIL
 // ---------------------------------------------------------------------------
 
-function Fonts() {
-  return (
-    <style>{`
-      @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Manrope:wght@400;500;600;700;800&display=swap');
-      * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-      body { margin: 0; }
-      input, select, button { font-family: 'Manrope', sans-serif; outline: none; }
-      input::placeholder { color: #B9A9CC; }
-      ::-webkit-scrollbar { width: 0px; height: 0px; }
-    `}</style>
-  );
+function renderPerfil() {
+  const p = state.perfil;
+  const initial = (p.nome || '').trim().charAt(0).toUpperCase() || '?';
+  return `
+    <div class="profile-header">
+      <div class="profile-avatar"><span>${esc(initial)}</span></div>
+      <div>
+        <div class="profile-name">${esc(p.nome)}</div>
+        <div class="profile-age">${esc(p.idade)} anos</div>
+      </div>
+    </div>
+
+    <div class="section-label">Dados pessoais</div>
+    <div class="card">
+      <div class="info-row"><span class="info-label">Nome</span><span class="info-value">${esc(p.nome)}</span></div>
+      <div class="info-row"><span class="info-label">Idade</span><span class="info-value">${esc(p.idade)} anos</span></div>
+    </div>
+
+    <div class="section-label">Peso</div>
+    <div class="card">
+      <div class="field">
+        <div class="field-label">Peso atual</div>
+        <div class="field-box">
+          <input value="${esc(p.pesoAtual)}" oninput="setPeso(this.value)" />
+          <span class="field-suffix">kg</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">Medidas</div>
+    <div class="card">
+      <div class="stat-grid">
+        <div class="stat-box"><span class="stat-label">Cintura</span><span class="stat-value">${esc(p.cintura)}<span class="stat-suffix">cm</span></span></div>
+        <div class="stat-box"><span class="stat-label">Quadril</span><span class="stat-value">${esc(p.quadril)}<span class="stat-suffix">cm</span></span></div>
+        <div class="stat-box"><span class="stat-label">Bíceps</span><span class="stat-value">${esc(p.biceps)}<span class="stat-suffix">cm</span></span></div>
+        <div class="stat-box"><span class="stat-label">Coxa</span><span class="stat-value">${esc(p.coxa)}<span class="stat-suffix">cm</span></span></div>
+      </div>
+    </div>
+
+    <div class="section-label">Objetivo e obstáculo</div>
+    <div class="card">
+      <div class="info-row"><span class="info-label">Objetivo</span><span class="info-value">${esc(p.objetivo)}</span></div>
+      <div class="info-row"><span class="info-label">Obstáculo</span><span class="info-value">${esc(p.obstaculo)}</span></div>
+    </div>
+  `;
 }
 
-const COLORS = {
-  bg: '#EFEAE0',
-  cream: '#FAF6EC',
-  ink: '#241333',
-  purple: '#4B1D6E',
-  purpleDeep: '#2E1049',
-  purpleSoft: '#EDE3F5',
-  yellow: '#F8C300',
-  yellowSoft: '#FDF0BE',
-};
+// ---------------------------------------------------------------------------
+// RENDER: PROGRESSO
+// ---------------------------------------------------------------------------
 
-const styles = {
-  app: {
-    minHeight: '100vh', width: '100%', background: `radial-gradient(circle at 50% 0%, #F3EEE2 0%, ${COLORS.bg} 60%)`,
-    display: 'flex', justifyContent: 'center', padding: '0',
-  },
-  phone: {
-    width: '100%', maxWidth: 460, minHeight: '100vh', background: COLORS.cream, position: 'relative',
-    display: 'flex', flexDirection: 'column', boxShadow: '0 0 60px rgba(46,16,73,0.12)',
-  },
-  content: {
-    flex: 1, overflowY: 'auto', padding: '16px 18px 100px 18px',
-  },
-};
+function renderProgresso() {
+  let weeksHtml = '';
+  for (let w = 1; w <= TOTAL_WEEKS; w++) {
+    const isOpen = state.openWeekEval === w;
+    const data = state.avaliacao[w] || {};
+    const filled = AVAL_FIELDS.filter(f => data[f.key] !== undefined && data[f.key] !== '').length;
+    const full = filled === AVAL_FIELDS.length;
+
+    let fieldsHtml = AVAL_FIELDS.map(f => {
+      if (f.type === 'scale') {
+        let btns = [1,2,3,4,5].map(n => `<button class="scale-btn ${data[f.key] === n ? 'active' : ''}" onclick="updateAval(${w}, '${f.key}', ${n})">${n}</button>`).join('');
+        return `<div class="aval-row"><span class="aval-label">${esc(f.label)}</span><div class="scale-btns">${btns}</div></div>`;
+      }
+      return `<div class="aval-row"><span class="aval-label">${esc(f.label)}</span><input type="number" min="0" max="4" placeholder="${esc(f.placeholder||'')}" value="${data[f.key] ?? ''}" oninput="updateAval(${w}, '${f.key}', this.value)" /></div>`;
+    }).join('');
+
+    weeksHtml += `
+      <div class="week-item ${isOpen ? 'open' : ''}">
+        <button class="week-header" onclick="toggleWeekEval(${w})">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="week-badge ${full ? 'full' : ''}"><span>${w}</span></div>
+            <div class="week-title">Semana ${w}</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="week-fill">${filled}/${AVAL_FIELDS.length}</span>
+            <span class="chevron ${isOpen ? 'rot' : ''}">▾</span>
+          </div>
+        </button>
+        ${isOpen ? `<div class="week-body">${fieldsHtml}</div>` : ''}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="card" style="background:var(--purple-soft); border:none; margin-bottom:16px;">
+      <div style="font-size:12.5px; color:var(--purple); line-height:1.5;">
+        Registre como foi cada semana. A escala vai de 1 (baixo) a 5 (alto) — exceto frequência, que é o número de treinos feitos.
+      </div>
+    </div>
+    ${weeksHtml}
+  `;
+}
 
 // ---------------------------------------------------------------------------
-// TOP BAR
+// MAIN RENDER
 // ---------------------------------------------------------------------------
 
 const TAB_META = {
-  treinos: { title: 'Treinos' },
-  guia: { title: 'Guia de execução' },
-  perfil: { title: 'Perfil' },
-  progresso: { title: 'Progresso' },
+  treinos: 'Treinos',
+  guia: 'Guia de execução',
+  perfil: 'Perfil',
+  progresso: 'Progresso',
 };
 
-function TopBar({ tab }) {
-  const meta = TAB_META[tab];
-  return (
-    <div style={{
-      background: COLORS.purpleDeep, padding: '18px 18px 16px 18px',
-      borderBottom: `3px solid ${COLORS.yellow}`, flexShrink: 0,
-    }}>
-      <div style={{ fontFamily: 'Archivo Black, sans-serif', color: '#FAF6EC', fontSize: 22, lineHeight: 1.1 }}>
-        {meta.title}
-      </div>
+const NAV_ITEMS = [
+  { id: 'treinos', icon: '🏋️', label: 'Treinos' },
+  { id: 'guia', icon: '📘', label: 'Guia' },
+  { id: 'progresso', icon: '📈', label: 'Progresso' },
+  { id: 'perfil', icon: '👤', label: 'Perfil' },
+];
+
+function render() {
+  const app = document.getElementById('app');
+
+  if (state.loading) {
+    app.innerHTML = `<div class="loading-screen">Carregando…</div>`;
+    return;
+  }
+
+  let contentHtml = '';
+  if (state.tab === 'treinos') contentHtml = renderTreinos();
+  else if (state.tab === 'guia') contentHtml = renderGuia();
+  else if (state.tab === 'perfil') contentHtml = renderPerfil();
+  else if (state.tab === 'progresso') contentHtml = renderProgresso();
+
+  let navHtml = NAV_ITEMS.map(item => {
+    const active = state.tab === item.id;
+    return `
+      <button class="navbtn ${active ? 'active' : ''}" onclick="setTab('${item.id}')">
+        <span class="icon">${item.icon}</span>
+        <span class="lbl">${item.label}</span>
+        ${active ? '<span class="navdot"></span>' : ''}
+      </button>
+    `;
+  }).join('');
+
+  app.innerHTML = `
+    <div class="phone">
+      <div class="topbar"><div class="topbar-title">${TAB_META[state.tab]}</div></div>
+      <div class="content">${contentHtml}</div>
+      <div class="bottomnav">${navHtml}</div>
+      <div class="toast" id="toast">✓ Salvo</div>
     </div>
-  );
+  `;
 }
 
 // ---------------------------------------------------------------------------
-// BOTTOM NAV
+// INIT
 // ---------------------------------------------------------------------------
 
-function BottomNav({ tab, setTab }) {
-  const items = [
-    { id: 'treinos', icon: Dumbbell, label: 'Treinos' },
-    { id: 'guia', icon: BookOpen, label: 'Guia' },
-    { id: 'progresso', icon: LineChart, label: 'Progresso' },
-    { id: 'perfil', icon: User, label: 'Perfil' },
-  ];
-  return (
-    <div style={{
-      position: 'sticky', bottom: 0, left: 0, right: 0, background: '#FAF6EC',
-      borderTop: `1px solid ${COLORS.purpleSoft}`, display: 'flex', flexShrink: 0,
-      boxShadow: '0 -6px 18px rgba(46,16,73,0.06)',
-    }}>
-      {items.map(({ id, icon: Icon, label }) => {
-        const active = tab === id;
-        return (
-          <button key={id} onClick={() => setTab(id)} style={{
-            flex: 1, border: 'none', background: 'transparent', padding: '10px 0 8px 0',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, cursor: 'pointer',
-          }}>
-            <Icon size={20} color={active ? COLORS.purple : '#B9A9CC'} strokeWidth={active ? 2.4 : 2} />
-            <span style={{
-              fontSize: 10, fontWeight: active ? 800 : 600, color: active ? COLORS.purple : '#B9A9CC',
-              fontFamily: 'Manrope, sans-serif',
-            }}>{label}</span>
-            {active && <div style={{ width: 4, height: 4, borderRadius: 2, background: COLORS.yellow, marginTop: 1 }} />}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// CARD / SECTION PRIMITIVES
-// ---------------------------------------------------------------------------
-
-function Card({ children, style }) {
-  return (
-    <div style={{
-      background: '#FFFFFF', borderRadius: 16, padding: 16, border: `1px solid #EDE3F5`,
-      boxShadow: '0 2px 10px rgba(46,16,73,0.04)', ...style,
-    }}>
-      {children}
-    </div>
-  );
-}
-
-function SectionLabel({ children, style }) {
-  return (
-    <div style={{
-      fontFamily: 'Archivo Black, sans-serif', fontSize: 11, letterSpacing: 1.5, color: COLORS.purple,
-      marginBottom: 10, marginTop: 22, textTransform: 'uppercase', ...style,
-    }}>
-      {children}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// TAB: TREINOS (inclui dica importante + placar da semana + check-in do dia)
-// ---------------------------------------------------------------------------
-
-function Treinos({ week, setWeek, activeDay, setActiveDay, getExState, toggleExercise, setCarga, prevCarga, dayCompletion }) {
-  const workout = WORKOUTS.find((w) => w.id === activeDay);
-  const { done, total } = dayCompletion(activeDay, week);
-
-  return (
-    <div>
-      {/* Dica importante - sempre a primeira coisa na tela */}
-      <div style={{
-        background: COLORS.purple, borderRadius: 16, padding: '14px 16px', display: 'flex', gap: 10,
-        alignItems: 'flex-start', marginBottom: 18, boxShadow: '0 4px 14px rgba(75,29,110,0.25)',
-      }}>
-        <Info size={18} color={COLORS.yellow} style={{ flexShrink: 0, marginTop: 1 }} />
-        <div>
-          <div style={{ fontFamily: 'Archivo Black, sans-serif', color: COLORS.yellow, fontSize: 10.5, letterSpacing: 1, marginBottom: 3 }}>
-            DICA IMPORTANTE
-          </div>
-          <div style={{ fontFamily: 'Manrope, sans-serif', color: '#F5EEFB', fontSize: 13, lineHeight: 1.45 }}>
-            {DICA_GERAL}
-          </div>
-        </div>
-      </div>
-
-      {/* Placar da semana */}
-      <div style={{
-        background: COLORS.purpleDeep, borderRadius: 18, padding: '16px 16px', position: 'relative', overflow: 'hidden', marginBottom: 18,
-      }}>
-        <div style={{ position: 'absolute', top: -30, right: -30, width: 100, height: 100, borderRadius: '50%', background: 'rgba(248,195,0,0.08)' }} />
-        <div style={{ fontFamily: 'Manrope, sans-serif', color: '#C9B8DE', fontSize: 11, fontWeight: 700, letterSpacing: 1.5, marginBottom: 4 }}>
-          SEMANA ATUAL
-        </div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-          <span style={{ fontFamily: 'Archivo Black, sans-serif', color: COLORS.yellow, fontSize: 38, lineHeight: 1 }}>
-            {String(week).padStart(2, '0')}
-          </span>
-          <span style={{ fontFamily: 'Manrope, sans-serif', color: '#C9B8DE', fontSize: 14, fontWeight: 700 }}>/ {TOTAL_WEEKS}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 4, marginTop: 12 }}>
-          {Array.from({ length: TOTAL_WEEKS }, (_, i) => i + 1).map((w) => (
-            <button key={w} onClick={() => setWeek(w)} style={{
-              flex: 1, height: 8, borderRadius: 4, border: 'none', cursor: 'pointer',
-              background: w === week ? COLORS.yellow : w < week ? 'rgba(248,195,0,0.35)' : 'rgba(255,255,255,0.12)',
-            }} title={`Semana ${w}`} />
-          ))}
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, overflowX: 'auto', paddingBottom: 2 }}>
-        {WORKOUTS.map((w) => {
-          const active = w.id === activeDay;
-          const { done: d, total: t } = dayCompletion(w.id, week);
-          const complete = d === t;
-          return (
-            <button key={w.id} onClick={() => setActiveDay(w.id)} style={{
-              flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, padding: '9px 14px', borderRadius: 20,
-              border: `1.5px solid ${active ? COLORS.purple : complete ? COLORS.yellow : '#E4D8F0'}`,
-              background: active ? COLORS.purple : '#FFFFFF', cursor: 'pointer',
-              fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: 12.5,
-              color: active ? COLORS.yellow : COLORS.purple,
-            }}>
-              {complete && !active && <Check size={12} color="#B78A00" strokeWidth={3} />}
-              {w.letter} · {w.title}
-            </button>
-          );
-        })}
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-        <span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 12.5, color: '#8577A0', fontWeight: 700 }}>
-          {done}/{total} concluídos
-        </span>
-        {done === total && (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#B78A00', fontSize: 12, fontWeight: 800, fontFamily: 'Manrope, sans-serif' }}>
-            <Flame size={14} /> treino completo
-          </span>
-        )}
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
-        {workout.exercises.map((ex) => (
-          <ExerciseRow key={ex.id} ex={ex} dayId={workout.id}
-            state={getExState(workout.id, ex.id)}
-            onToggle={() => toggleExercise(workout.id, ex.id)}
-            onCarga={(v) => setCarga(workout.id, ex.id, v)}
-            prev={prevCarga(workout.id, ex.id)}
-          />
-        ))}
-      </div>
-
-      {workout.funcional && (
-        <>
-          <SectionLabel>Funcional · {workout.funcional.note}</SectionLabel>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {workout.funcional.exercises.map((ex) => (
-              <ExerciseRow key={ex.id} ex={ex} dayId={workout.id}
-                state={getExState(workout.id, ex.id)}
-                onToggle={() => toggleExercise(workout.id, ex.id)}
-                onCarga={(v) => setCarga(workout.id, ex.id, v)}
-                prev={prevCarga(workout.id, ex.id)}
-                noWeight
-              />
-            ))}
-          </div>
-        </>
-      )}
-
-      <SectionLabel>Cardio</SectionLabel>
-      <Card style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{
-          width: 40, height: 40, borderRadius: 10, background: COLORS.yellowSoft,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        }}>
-          <Flame size={19} color="#B78A00" />
-        </div>
-        <div>
-          <div style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: 13.5, color: COLORS.ink }}>{workout.cardio.duration}</div>
-          <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 12, color: '#8577A0' }}>{workout.cardio.desc}</div>
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-function ExerciseRow({ ex, state, onToggle, onCarga, prev, noWeight }) {
-  const showWeight = ex.trackWeight === false || noWeight ? false : true;
-  return (
-    <div style={{
-      background: '#FFFFFF', border: `1px solid ${state.checked ? COLORS.yellow : '#EDE3F5'}`,
-      borderRadius: 14, padding: '12px 12px',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-        <button onClick={onToggle} style={{
-          width: 24, height: 24, borderRadius: 7, flexShrink: 0, marginTop: 1,
-          border: `2px solid ${state.checked ? COLORS.yellow : '#D9CBEB'}`,
-          background: state.checked ? COLORS.yellow : 'transparent',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-        }}>
-          {state.checked && <Check size={14} color={COLORS.purpleDeep} strokeWidth={3.5} />}
-        </button>
-        <div style={{ flex: 1 }}>
-          <div style={{
-            fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: 13.5, color: COLORS.ink,
-            textDecoration: state.checked ? 'line-through' : 'none', opacity: state.checked ? 0.55 : 1,
-          }}>
-            {ex.name}
-          </div>
-          <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11.5, color: '#8577A0', marginTop: 1 }}>
-            {ex.series}{ex.rest ? ` · descanso ${ex.rest}` : ''}{ex.intensity ? ` · ${ex.intensity}` : ''}
-          </div>
-          {ex.objective && (
-            <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11, color: '#B09FC7', marginTop: 1 }}>
-              {ex.objective}
-            </div>
-          )}
-        </div>
-      </div>
-      {showWeight && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, marginLeft: 34 }}>
-          <input
-            type="text" inputMode="decimal" placeholder="carga (kg)" value={state.carga}
-            onChange={(e) => onCarga(e.target.value)}
-            style={{
-              width: 100, border: `1.5px solid #E4D8F0`, borderRadius: 9, padding: '6px 9px',
-              fontSize: 12.5, fontWeight: 700, color: COLORS.ink,
-            }}
-          />
-          {prev && (
-            <span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11, color: '#B09FC7' }}>
-              semana anterior: {prev}kg
-            </span>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// TAB: GUIA DE EXECUÇÃO
-// ---------------------------------------------------------------------------
-
-function Guia() {
-  const [open, setOpen] = useState(null);
-  return (
-    <div>
-      <Card style={{ marginBottom: 16, background: COLORS.purpleSoft, border: 'none' }}>
-        <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 12.5, color: COLORS.purple, lineHeight: 1.5 }}>
-          Toque em um exercício para ver como executar, o foco muscular, o erro mais comum e uma dica prática.
-        </div>
-      </Card>
-
-      <SectionLabel style={{ marginTop: 0 }}>Escala de intensidade</SectionLabel>
-      <Card style={{ marginBottom: 16 }}>
-        {RPE_SCALE.map((r, i) => (
-          <div key={r.code} style={{
-            display: 'flex', justifyContent: 'space-between', padding: '7px 0',
-            borderTop: i === 0 ? 'none' : '1px solid #F3EDFA',
-          }}>
-            <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: 12.5, color: COLORS.purple }}>{r.code}</span>
-            <span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 12.5, color: '#6B5A80' }}>{r.label}</span>
-          </div>
-        ))}
-      </Card>
-
-      <SectionLabel style={{ marginTop: 0 }}>Exercícios</SectionLabel>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {GUIDE.map((g, i) => {
-          const isOpen = open === i;
-          return (
-            <div key={g.name} style={{
-              background: '#FFFFFF', borderRadius: 14, border: `1px solid ${isOpen ? COLORS.purple : '#EDE3F5'}`, overflow: 'hidden',
-            }}>
-              <button onClick={() => setOpen(isOpen ? null : i)} style={{
-                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '12px 14px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left',
-              }}>
-                <div>
-                  <div style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: 13.5, color: COLORS.ink }}>{g.name}</div>
-                  <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11.5, color: '#8577A0' }}>{g.foco}</div>
-                </div>
-                <ChevronDown size={18} color={COLORS.purple} style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s', flexShrink: 0 }} />
-              </button>
-              {isOpen && (
-                <div style={{ padding: '0 14px 14px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <GuideLine label="Como fazer" text={g.como} />
-                  <GuideLine label="Erro comum" text={g.erro} tone="warn" />
-                  <GuideLine label="Dica prática" text={g.dica} tone="tip" />
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function GuideLine({ label, text, tone }) {
-  const color = tone === 'warn' ? '#B23A3A' : tone === 'tip' ? '#B78A00' : COLORS.purple;
-  return (
-    <div>
-      <div style={{ fontFamily: 'Archivo Black, sans-serif', fontSize: 9.5, letterSpacing: 1, color, marginBottom: 2 }}>
-        {label.toUpperCase()}
-      </div>
-      <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 12.5, color: '#4A3B5C', lineHeight: 1.45 }}>{text}</div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// TAB: PERFIL
-// ---------------------------------------------------------------------------
-
-function Field({ label, value, onChange, suffix }) {
-  return (
-    <div style={{ marginBottom: 12 }}>
-      <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11, fontWeight: 700, color: '#8577A0', marginBottom: 5 }}>{label}</div>
-      <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #E4D8F0', borderRadius: 10, padding: '9px 12px' }}>
-        <input value={value} onChange={(e) => onChange(e.target.value)} style={{
-          border: 'none', flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700, color: COLORS.ink, background: 'transparent',
-        }} />
-        {suffix && <span style={{ fontSize: 12, color: '#B09FC7', fontWeight: 700, flexShrink: 0, marginLeft: 6 }}>{suffix}</span>}
-      </div>
-    </div>
-  );
-}
-
-function InfoRow({ label, value, last }) {
-  return (
-    <div style={{
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10,
-      padding: '10px 0', borderBottom: last ? 'none' : '1px solid #F3EDFA',
-    }}>
-      <span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 12.5, fontWeight: 700, color: '#8577A0' }}>{label}</span>
-      <span style={{
-        fontFamily: 'Manrope, sans-serif', fontSize: 13, fontWeight: 700, color: COLORS.ink,
-        textAlign: 'right', maxWidth: '62%',
-      }}>{value}</span>
-    </div>
-  );
-}
-
-function StatBox({ label, value, suffix }) {
-  return (
-    <div style={{
-      background: COLORS.purpleSoft, borderRadius: 12, padding: '12px 10px',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
-    }}>
-      <span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 10.5, fontWeight: 700, color: COLORS.purple, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-        {label}
-      </span>
-      <span style={{ fontFamily: 'Archivo Black, sans-serif', fontSize: 19, color: COLORS.purpleDeep, lineHeight: 1 }}>
-        {value}<span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11, fontWeight: 700, color: '#8577A0', marginLeft: 2 }}>{suffix}</span>
-      </span>
-    </div>
-  );
-}
-
-function Perfil({ perfil, onChange }) {
-  const setPeso = (v) => onChange({ ...perfil, pesoAtual: v });
-  return (
-    <div>
-      <div style={{
-        background: COLORS.purpleDeep, borderRadius: 16, padding: 16, marginBottom: 18,
-        display: 'flex', alignItems: 'center', gap: 12,
-      }}>
-        <div style={{
-          width: 46, height: 46, borderRadius: '50%', background: COLORS.yellow,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        }}>
-          <span style={{ fontFamily: 'Archivo Black, sans-serif', color: COLORS.purpleDeep, fontSize: 18 }}>
-            {perfil.nome?.trim()?.[0]?.toUpperCase() || '?'}
-          </span>
-        </div>
-        <div>
-          <div style={{ fontFamily: 'Manrope, sans-serif', color: '#fff', fontWeight: 800, fontSize: 14.5 }}>{perfil.nome}</div>
-          <div style={{ fontFamily: 'Manrope, sans-serif', color: '#C9B8DE', fontSize: 11.5 }}>{perfil.idade} anos</div>
-        </div>
-      </div>
-
-      <SectionLabel>Dados pessoais</SectionLabel>
-      <Card>
-        <InfoRow label="Nome" value={perfil.nome} />
-        <InfoRow label="Idade" value={`${perfil.idade} anos`} last />
-      </Card>
-
-      <SectionLabel>Peso</SectionLabel>
-      <Card>
-        <Field label="Peso atual" value={perfil.pesoAtual} onChange={setPeso} suffix="kg" />
-      </Card>
-
-      <SectionLabel>Medidas</SectionLabel>
-      <Card>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <StatBox label="Cintura" value={perfil.cintura} suffix="cm" />
-          <StatBox label="Quadril" value={perfil.quadril} suffix="cm" />
-          <StatBox label="Bíceps" value={perfil.biceps} suffix="cm" />
-          <StatBox label="Coxa" value={perfil.coxa} suffix="cm" />
-        </div>
-      </Card>
-
-      <SectionLabel>Objetivo e obstáculo</SectionLabel>
-      <Card>
-        <InfoRow label="Objetivo" value={perfil.objetivo} />
-        <InfoRow label="Obstáculo" value={perfil.obstaculo} last />
-      </Card>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// TAB: PROGRESSO (12 semanas)
-// ---------------------------------------------------------------------------
-
-function Progresso({ avaliacao, updateAval }) {
-  const [openWeek, setOpenWeek] = useState(1);
-  return (
-    <div>
-      <Card style={{ marginBottom: 16, background: COLORS.purpleSoft, border: 'none' }}>
-        <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 12.5, color: COLORS.purple, lineHeight: 1.5 }}>
-          Registre como foi cada semana. A escala vai de 1 (baixo) a 5 (alto) — exceto frequência, que é o número de treinos feitos.
-        </div>
-      </Card>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {Array.from({ length: TOTAL_WEEKS }, (_, i) => i + 1).map((w) => {
-          const isOpen = openWeek === w;
-          const data = avaliacao[w] || {};
-          const filled = AVAL_FIELDS.filter((f) => data[f.key] !== undefined && data[f.key] !== '').length;
-          return (
-            <div key={w} style={{
-              background: '#fff', borderRadius: 14, border: `1px solid ${isOpen ? COLORS.purple : '#EDE3F5'}`, overflow: 'hidden',
-            }}>
-              <button onClick={() => setOpenWeek(isOpen ? null : w)} style={{
-                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '12px 14px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{
-                    width: 30, height: 30, borderRadius: 8, background: filled === AVAL_FIELDS.length ? COLORS.yellow : COLORS.purpleSoft,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                  }}>
-                    <span style={{ fontFamily: 'Archivo Black, sans-serif', fontSize: 12, color: COLORS.purple }}>{w}</span>
-                  </div>
-                  <div style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: 13.5, color: COLORS.ink }}>Semana {w}</div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11, color: '#B09FC7', fontWeight: 700 }}>{filled}/{AVAL_FIELDS.length}</span>
-                  <ChevronDown size={17} color={COLORS.purple} style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
-                </div>
-              </button>
-              {isOpen && (
-                <div style={{ padding: '2px 14px 16px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {AVAL_FIELDS.map((f) => (
-                    <div key={f.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                      <span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 12.5, fontWeight: 700, color: '#4A3B5C' }}>{f.label}</span>
-                      {f.type === 'scale' ? (
-                        <ScaleInput value={data[f.key]} onChange={(v) => updateAval(w, f.key, v)} />
-                      ) : (
-                        <input
-                          type="number" min="0" max="4" placeholder={f.placeholder}
-                          value={data[f.key] ?? ''} onChange={(e) => updateAval(w, f.key, e.target.value)}
-                          style={{ width: 70, border: '1.5px solid #E4D8F0', borderRadius: 8, padding: '6px 9px', fontSize: 12.5, fontWeight: 700, color: COLORS.ink }}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+(async function init() {
+  const [p, c, a] = await Promise.all([
+    loadKey('sabrina-perfil', DEFAULT_PERFIL),
+    loadKey('sabrina-checkins', {}),
+    loadKey('sabrina-avaliacao', {}),
+  ]);
+  state.perfil = p;
+  state.checkins = c;
+  state.avaliacao = a;
+  state.loading = false;
+  render();
+})();
+</script>
+</body>
+</html>
