@@ -1,0 +1,901 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Dumbbell, BookOpen, User, LineChart, ChevronDown, Check, Info, Flame } from 'lucide-react';
+
+// ---------------------------------------------------------------------------
+// DATA — extracted from the training sheet
+// ---------------------------------------------------------------------------
+
+const TOTAL_WEEKS = 12;
+
+const RPE_SCALE = [
+  { code: 'RPE 6', label: 'confortável' },
+  { code: 'RPE 7', label: 'moderadamente difícil' },
+  { code: 'RPE 8', label: 'difícil, mas com margem' },
+  { code: 'RPE 9', label: 'quase no limite' },
+  { code: 'RPE 10', label: 'esforço máximo' },
+];
+
+const DICA_GERAL = 'Mantenha a respiração controlada para a contração do abdômen — isso melhora a execução na maioria dos movimentos.';
+
+const WORKOUTS = [
+  {
+    id: 'a',
+    letter: 'A',
+    title: 'Costas',
+    exercises: [
+      { id: 'a1', name: 'Mobilidade', series: '2 séries', rest: '45s', intensity: 'Leve', objective: 'Articulações', trackWeight: false },
+      { id: 'a2', name: 'Puxada alta c/ barra', series: '3x10', rest: '1 min', intensity: 'RPE 7', objective: 'Desenvolvimento das costas' },
+      { id: 'a3', name: 'Puxada alta c/ triângulo', series: '3x10', rest: '1 min', intensity: 'RPE 7', objective: 'Fortalecimento das dorsais' },
+      { id: 'a4', name: 'Remada na máquina', series: '3x10', rest: '1 min', intensity: 'RPE 7', objective: 'Fortalecimento do miolo das costas' },
+      { id: 'a5', name: 'Crucifixo inverso na máquina', series: '3x10', rest: '1 min', intensity: 'RPE 7', objective: 'Deltoide posterior e postura' },
+    ],
+    cardio: { duration: '30 min', desc: 'Bike HIIT — moderado (30s forte / 90s leve)' },
+  },
+  {
+    id: 'b',
+    letter: 'B',
+    title: 'Pernas',
+    exercises: [
+      { id: 'b1', name: 'Mobilidade', series: '2 séries', rest: '45s', intensity: 'Leve', objective: 'Articulações', trackWeight: false },
+      { id: 'b2', name: 'Cadeira extensora', series: '4x10', rest: '1 min', intensity: 'RPE 7', objective: 'Isolamento de quadríceps' },
+      { id: 'b3', name: 'Leg press 45°', series: '3x10', rest: '1 min', intensity: 'RPE 7', objective: 'Força de quadríceps e glúteo' },
+      { id: 'b4', name: 'Mesa flexora', series: '3x10', rest: '1 min', intensity: 'RPE 6', objective: 'Desenvolvimento de isquiotibiais' },
+      { id: 'b5', name: 'Cadeira adutora', series: '4x10', rest: '1 min', intensity: 'RPE 7', objective: 'Ativação de adutores' },
+      { id: 'b6', name: 'Panturrilha', series: '3x15', rest: '1 min', intensity: 'RPE 8', objective: 'Fortalecimento de panturrilha' },
+    ],
+    cardio: { duration: '30 min', desc: 'Bike HIIT — moderado (30s forte / 90s leve)' },
+  },
+  {
+    id: 'c',
+    letter: 'C',
+    title: 'Peito, ombro e braço',
+    exercises: [
+      { id: 'c1', name: 'Mobilidade', series: '2 séries', rest: '45s', intensity: 'Leve', objective: 'Articulações', trackWeight: false },
+      { id: 'c2', name: 'Peck deck', series: '3x10', rest: '1 min', intensity: 'RPE 7', objective: 'Isolamento do peitoral' },
+      { id: 'c3', name: 'Desenvolvimento', series: '3x10', rest: '1 min', intensity: 'RPE 7', objective: 'Força de ombros' },
+      { id: 'c4', name: 'Elevação lateral', series: '3x10', rest: '1 min', intensity: 'RPE 7', objective: 'Hipertrofia do deltoide lateral' },
+      { id: 'c5', name: 'Bíceps martelo', series: '3x10', rest: '1 min', intensity: 'RPE 8', objective: 'Braquial e braquiorradial' },
+      { id: 'c6', name: 'Tríceps corda na polia', series: '3x10', rest: '1 min', intensity: 'RPE 8', objective: 'Extensão e definição do tríceps' },
+    ],
+    funcional: {
+      note: 'Circuito — 2 min de descanso entre voltas · gasto calórico',
+      exercises: [
+        { id: 'cf1', name: 'Agachamento livre', series: '3x15' },
+        { id: 'cf2', name: 'Polichinelo', series: '3x20' },
+        { id: 'cf3', name: 'Joelho x cotovelo', series: '3x15' },
+        { id: 'cf4', name: 'Corridinho pra frente/trás', series: '3x1 min' },
+      ],
+    },
+    cardio: { duration: '15 min', desc: 'Caminhada inclinada — velocidade 5 km/h' },
+  },
+  {
+    id: 'd',
+    letter: 'D',
+    title: 'Funcional + Cardio',
+    exercises: [
+      { id: 'd1', name: 'Mobilidade', series: '2 séries', rest: '45s', intensity: 'Leve', objective: 'Articulações', trackWeight: false },
+      { id: 'd2', name: 'Caminhada inclinada', series: '5 min', rest: '—', intensity: 'Leve', objective: 'Ativar circulação', trackWeight: false },
+    ],
+    funcional: {
+      note: 'Circuito — 2 min30s de descanso entre blocos',
+      exercises: [
+        { id: 'df1', name: 'Agachamento c/ kettlebell', series: '10x', objective: 'Força de pernas' },
+        { id: 'df2', name: 'Shoulder cars', series: '12 p/ lado', objective: 'Estabilidade e costas' },
+        { id: 'df3', name: 'Step up em caixa', series: '10 p/ lado', objective: 'Força unilateral' },
+        { id: 'df4', name: 'Marcha estacionária c/ joelho alto e tornozeleira', series: '30s', objective: 'Coordenação e cardio' },
+        { id: 'df5', name: 'Farmer walk', series: '30s', objective: 'Core' },
+        { id: 'df6', name: 'Prancha', series: '30s', objective: 'Estabilidade do core' },
+      ],
+    },
+    cardio: { duration: '20 min', desc: 'Caminhada inclinada — velocidade 5 km/h' },
+  },
+];
+
+const GUIDE = [
+  { name: 'Mobilidade', foco: 'Articulações', como: 'Movimentos lentos e controlados, buscando amplitude sem compensação.', erro: 'Fazer rápido e com pouca amplitude.', dica: 'Priorize qualidade do movimento, não velocidade.' },
+  { name: 'Puxada alta c/ barra', foco: 'Latíssimo do dorso', como: 'Puxe a barra em direção à parte superior do peito, mantendo o peito aberto e os cotovelos para baixo e para fora.', erro: 'Puxar atrás da cabeça ou balançar o corpo.', dica: 'Pense em aproximar os cotovelos do quadril, "esmagando" as costas.' },
+  { name: 'Puxada alta c/ triângulo', foco: 'Desenvolvimento dos dorsais', como: 'Puxe o triângulo em direção ao peito, contraindo as escápulas e puxando os cotovelos para trás.', erro: 'Executar o movimento apenas com os braços.', dica: 'Inicie o movimento contraindo as escápulas.' },
+  { name: 'Remada na máquina', foco: 'Costas', como: 'Mão em posição neutra, peito estufado; reme até o braço ficar na linha das costas.', erro: 'Girar o tronco ou ultrapassar demais a linha das costas.', dica: 'Movimento controlado, concentração na escápula.' },
+  { name: 'Crucifixo inverso na máquina', foco: 'Deltoide posterior e parte alta das costas', como: 'Pegada supinada na linha do ombro; abra os braços até a linha das costas sem ultrapassar, segurando 1–2s.', erro: 'Jogar o corpo para trás ou usar impulso.', dica: 'Mantenha tensão contínua durante toda a série.' },
+  { name: 'Cadeira extensora', foco: 'Quadríceps', como: 'Pés levemente para fora, sem estender totalmente os joelhos; desça controlado.', erro: 'Travar ou superestender os joelhos, pés relaxados.', dica: 'Suba contando até 2 e desça contando até 3.' },
+  { name: 'Leg press 45°', foco: 'Quadríceps e glúteo', como: 'Pernas na linha do ombro, pés levemente para fora; empurre a plataforma.', erro: 'Tirar o quadril do banco ou superestender os joelhos.', dica: 'Pés firmes e lombar sempre apoiada no banco.' },
+  { name: 'Mesa flexora', foco: 'Posterior de coxa', como: 'Flexione os joelhos aproximando os calcanhares dos glúteos e retorne devagar.', erro: 'Tirar o quadril do banco ou usar impulso.', dica: 'Controle a volta e mantenha o abdômen ativo.' },
+  { name: 'Cadeira adutora', foco: 'Adutores da coxa', como: 'Segure a contração por 2s e solte de forma controlada, com peso moderado.', erro: 'Impulsionar demais ou bater os pesos.', dica: 'Aperte por 2 segundos no ponto de contração.' },
+  { name: 'Panturrilha', foco: 'Panturrilhas', como: 'Suba o máximo possível, segure 2s e desça alongando bem.', erro: 'Movimento rápido ou com pouca amplitude.', dica: 'O que fortalece é a isometria e a amplitude do movimento.' },
+  { name: 'Peck deck', foco: 'Peitoral', como: 'Banco na altura em que a mão fica na linha do peito; abra estufando e feche esmagando o peito.', erro: 'Encolher os ombros ou inclinar a cabeça para frente.', dica: 'Faça uma pequena pausa no ponto de contração.' },
+  { name: 'Desenvolvimento', foco: 'Deltoides e estabilidade de ombros', como: 'Empurre os halteres para cima e retorne até a mão ficar na altura do nariz.', erro: 'Arquear demais a lombar ou abrir os braços para trás.', dica: 'Contraia o abdômen durante todo o movimento.' },
+  { name: 'Elevação lateral', foco: 'Deltoide lateral', como: 'Braço levemente flexionado, suba somente até a altura do ombro.', erro: 'Encolher o ombro ou balançar o corpo.', dica: 'Mantenha os cotovelos levemente flexionados.' },
+  { name: 'Bíceps martelo', foco: 'Braquial e braquiorradial', como: 'Flexione os cotovelos com pegada neutra, braços próximos ao corpo.', erro: 'Balançar o tronco para gerar impulso.', dica: 'Priorize um movimento mais controlado.' },
+  { name: 'Tríceps corda na polia', foco: 'Contração completa do tríceps', como: 'Coluna levemente inclinada; desça em 3 tempos e suba em 3 tempos.', erro: 'Usar o tronco para gerar impulso.', dica: 'Separe a corda apenas na extensão final dos cotovelos.' },
+  { name: 'Agachamento livre', foco: 'Pernas', como: 'Flexione quadris e joelhos até onde conseguir mantendo boa postura, e retorne.', erro: 'Joelhos caindo para dentro ou coluna arredondando.', dica: 'Pense em "sentar para trás".' },
+  { name: 'Polichinelo', foco: 'Condicionamento cardiovascular', como: 'Coordene a abertura simultânea de braços e pernas em ritmo constante.', erro: 'Perder o ritmo ou aterrissar de forma brusca.', dica: 'Cuidado com o impacto na aterrissagem.' },
+  { name: 'Joelho x cotovelo', foco: 'Coordenação e resistência', como: 'Marche e, com o braço contrário, cruze o cotovelo com o joelho.', erro: 'Fazer o movimento lento demais.', dica: 'Mantenha as mãos atrás da orelha, abrindo os braços.' },
+  { name: 'Corridinho pra frente/trás', foco: 'Agilidade e capacidade cardiorrespiratória', como: 'Alterne deslocamentos curtos para frente e para trás com controle corporal.', erro: 'Fazer o movimento devagar.', dica: 'Use passadas rápidas e curtas.' },
+  { name: 'Agachamento c/ kettlebell', foco: 'Coordenação, quadríceps e glúteo', como: 'Segure o peso junto ao peito e agache mantendo o tronco firme.', erro: 'Inclinar o tronco para frente ou fechar os joelhos.', dica: 'Mantenha o core ativado durante todo o movimento.' },
+  { name: 'Shoulder cars', foco: 'Mobilidade de ombro', como: 'Faça círculos completos com o ombro, controladamente e com toda a amplitude, sem mover o tronco.', erro: 'Compensar o movimento com o tronco.', dica: 'Movimente apenas a articulação do ombro.' },
+  { name: 'Step up em caixa', foco: 'Força unilateral e glúteos', como: 'Suba na caixa usando principalmente a perna de apoio e desça controlado.', erro: 'Impulsionar com a perna que está no chão.', dica: 'Finalize a subida estendendo totalmente o quadril.' },
+  { name: 'Marcha estacionária c/ joelho alto e tornozeleira', foco: 'Coordenação e cardio', como: 'Marche no lugar elevando bem os joelhos, com tornozeleira.', erro: 'Perder o ritmo ou reduzir a amplitude.', dica: 'Mantenha o tronco estável durante toda a marcha.' },
+  { name: 'Farmer walk', foco: 'Core, pegada e estabilidade', como: 'Caminhe com postura alta, abdômen contraído e ombros alinhados, segurando a carga com firmeza.', erro: 'Inclinar o tronco ou balançar o corpo.', dica: 'Caminhe como se equilibrasse um copo na cabeça.' },
+  { name: 'Prancha', foco: 'Estabilidade do core', como: 'Sustente o corpo alinhado, apoiando antebraços e pés, com a pelve neutra.', erro: 'Elevar ou deixar o quadril cair.', dica: 'Respire normalmente mantendo a contração abdominal.' },
+];
+
+const DEFAULT_PERFIL = {
+  nome: 'Sabrina Tolentino de Macedo',
+  idade: '26',
+  pesoAtual: '79',
+  cintura: '88',
+  quadril: '118',
+  biceps: '29',
+  coxa: '63',
+  objetivo: 'Emagrecimento / massa muscular',
+  obstaculo: 'Procrastinação',
+};
+
+const AVAL_FIELDS = [
+  { key: 'frequencia', label: 'Frequência', type: 'number', placeholder: 'nº treinos' },
+  { key: 'humor', label: 'Humor', type: 'scale' },
+  { key: 'energia', label: 'Energia', type: 'scale' },
+  { key: 'dificuldade', label: 'Dificuldade', type: 'scale' },
+  { key: 'dor', label: 'Dor/desconforto', type: 'scale' },
+  { key: 'sono', label: 'Sono', type: 'scale' },
+  { key: 'alimentacao', label: 'Alimentação', type: 'scale' },
+];
+
+// ---------------------------------------------------------------------------
+// STORAGE HELPERS
+// ---------------------------------------------------------------------------
+
+async function loadKey(key, fallback) {
+  try {
+    const res = await window.storage.get(key, true);
+    return res ? JSON.parse(res.value) : fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+
+async function saveKey(key, value) {
+  try {
+    await window.storage.set(key, JSON.stringify(value), true);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// UI PRIMITIVES
+// ---------------------------------------------------------------------------
+
+function ScaleInput({ value, onChange }) {
+  const opts = [1, 2, 3, 4, 5];
+  return (
+    <div style={{ display: 'flex', gap: 4 }}>
+      {opts.map((n) => (
+        <button
+          key={n}
+          onClick={() => onChange(n)}
+          style={{
+            width: 26, height: 26, borderRadius: '50%', border: '1.5px solid #4B1D6E',
+            background: value === n ? '#4B1D6E' : 'transparent',
+            color: value === n ? '#F8C300' : '#4B1D6E',
+            fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: 12,
+            cursor: 'pointer', transition: 'all .15s',
+          }}
+        >
+          {n}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function SaveToast({ show }) {
+  return (
+    <div style={{
+      position: 'fixed', bottom: 86, left: '50%', transform: `translateX(-50%) translateY(${show ? '0' : '20px'})`,
+      opacity: show ? 1 : 0, transition: 'all .25s ease', background: '#241333', color: '#F8C300',
+      padding: '8px 16px', borderRadius: 20, fontSize: 12.5, fontFamily: 'Manrope, sans-serif', fontWeight: 700,
+      display: 'flex', alignItems: 'center', gap: 6, zIndex: 50, boxShadow: '0 6px 18px rgba(36,19,51,.35)',
+      pointerEvents: 'none',
+    }}>
+      <Check size={14} /> Salvo
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// MAIN APP
+// ---------------------------------------------------------------------------
+
+export default function App() {
+  const [tab, setTab] = useState('treinos');
+  const [loading, setLoading] = useState(true);
+  const [perfil, setPerfil] = useState(DEFAULT_PERFIL);
+  const [checkins, setCheckins] = useState({});
+  const [avaliacao, setAvaliacao] = useState({});
+  const [week, setWeek] = useState(1);
+  const [activeDay, setActiveDay] = useState('a');
+  const [toast, setToast] = useState(false);
+  const toastTimer = useRef(null);
+  const saveTimer = useRef({});
+
+  useEffect(() => {
+    (async () => {
+      const [p, c, a] = await Promise.all([
+        loadKey('sabrina-perfil', DEFAULT_PERFIL),
+        loadKey('sabrina-checkins', {}),
+        loadKey('sabrina-avaliacao', {}),
+      ]);
+      setPerfil(p);
+      setCheckins(c);
+      setAvaliacao(a);
+      setLoading(false);
+    })();
+  }, []);
+
+  const flashToast = useCallback(() => {
+    setToast(true);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(false), 1200);
+  }, []);
+
+  const persistCheckins = useCallback((next) => {
+    setCheckins(next);
+    clearTimeout(saveTimer.current.checkins);
+    saveTimer.current.checkins = setTimeout(async () => {
+      await saveKey('sabrina-checkins', next);
+      flashToast();
+    }, 400);
+  }, [flashToast]);
+
+  const persistPerfil = useCallback((next) => {
+    setPerfil(next);
+    clearTimeout(saveTimer.current.perfil);
+    saveTimer.current.perfil = setTimeout(async () => {
+      await saveKey('sabrina-perfil', next);
+      flashToast();
+    }, 500);
+  }, [flashToast]);
+
+  const persistAvaliacao = useCallback((next) => {
+    setAvaliacao(next);
+    clearTimeout(saveTimer.current.aval);
+    saveTimer.current.aval = setTimeout(async () => {
+      await saveKey('sabrina-avaliacao', next);
+      flashToast();
+    }, 400);
+  }, [flashToast]);
+
+  function getExState(dayId, exId) {
+    return checkins?.[week]?.[dayId]?.[exId] || { checked: false, carga: '' };
+  }
+
+  function toggleExercise(dayId, exId) {
+    const cur = getExState(dayId, exId);
+    const next = {
+      ...checkins,
+      [week]: {
+        ...checkins[week],
+        [dayId]: { ...(checkins[week]?.[dayId] || {}), [exId]: { ...cur, checked: !cur.checked } },
+      },
+    };
+    persistCheckins(next);
+  }
+
+  function setCarga(dayId, exId, carga) {
+    const cur = getExState(dayId, exId);
+    const next = {
+      ...checkins,
+      [week]: {
+        ...checkins[week],
+        [dayId]: { ...(checkins[week]?.[dayId] || {}), [exId]: { ...cur, carga } },
+      },
+    };
+    persistCheckins(next);
+  }
+
+  function prevCarga(dayId, exId) {
+    if (week <= 1) return null;
+    const v = checkins?.[week - 1]?.[dayId]?.[exId]?.carga;
+    return v ? v : null;
+  }
+
+  function dayCompletion(dayId, w) {
+    const wk = w || week;
+    const workout = WORKOUTS.find((x) => x.id === dayId);
+    const total = workout.exercises.length;
+    const done = workout.exercises.filter((ex) => checkins?.[wk]?.[dayId]?.[ex.id]?.checked).length;
+    return { done, total };
+  }
+
+  function updateAval(w, field, value) {
+    const next = { ...avaliacao, [w]: { ...(avaliacao[w] || {}), [field]: value } };
+    persistAvaliacao(next);
+  }
+
+  if (loading) {
+    return (
+      <div style={{ ...styles.app, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Fonts />
+        <div style={{ fontFamily: 'Manrope, sans-serif', color: '#7A6690', fontSize: 14 }}>Carregando…</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={styles.app}>
+      <Fonts />
+      <div style={styles.phone}>
+        <TopBar tab={tab} />
+        <div style={styles.content}>
+          {tab === 'treinos' && (
+            <Treinos
+              week={week} setWeek={setWeek}
+              activeDay={activeDay} setActiveDay={setActiveDay}
+              getExState={getExState} toggleExercise={toggleExercise}
+              setCarga={setCarga} prevCarga={prevCarga}
+              dayCompletion={dayCompletion}
+            />
+          )}
+          {tab === 'guia' && <Guia />}
+          {tab === 'perfil' && <Perfil perfil={perfil} onChange={persistPerfil} />}
+          {tab === 'progresso' && (
+            <Progresso avaliacao={avaliacao} updateAval={updateAval} />
+          )}
+        </div>
+        <BottomNav tab={tab} setTab={setTab} />
+        <SaveToast show={toast} />
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// FONTS & GLOBAL STYLES
+// ---------------------------------------------------------------------------
+
+function Fonts() {
+  return (
+    <style>{`
+      @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Manrope:wght@400;500;600;700;800&display=swap');
+      * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+      body { margin: 0; }
+      input, select, button { font-family: 'Manrope', sans-serif; outline: none; }
+      input::placeholder { color: #B9A9CC; }
+      ::-webkit-scrollbar { width: 0px; height: 0px; }
+    `}</style>
+  );
+}
+
+const COLORS = {
+  bg: '#EFEAE0',
+  cream: '#FAF6EC',
+  ink: '#241333',
+  purple: '#4B1D6E',
+  purpleDeep: '#2E1049',
+  purpleSoft: '#EDE3F5',
+  yellow: '#F8C300',
+  yellowSoft: '#FDF0BE',
+};
+
+const styles = {
+  app: {
+    minHeight: '100vh', width: '100%', background: `radial-gradient(circle at 50% 0%, #F3EEE2 0%, ${COLORS.bg} 60%)`,
+    display: 'flex', justifyContent: 'center', padding: '0',
+  },
+  phone: {
+    width: '100%', maxWidth: 460, minHeight: '100vh', background: COLORS.cream, position: 'relative',
+    display: 'flex', flexDirection: 'column', boxShadow: '0 0 60px rgba(46,16,73,0.12)',
+  },
+  content: {
+    flex: 1, overflowY: 'auto', padding: '16px 18px 100px 18px',
+  },
+};
+
+// ---------------------------------------------------------------------------
+// TOP BAR
+// ---------------------------------------------------------------------------
+
+const TAB_META = {
+  treinos: { title: 'Treinos' },
+  guia: { title: 'Guia de execução' },
+  perfil: { title: 'Perfil' },
+  progresso: { title: 'Progresso' },
+};
+
+function TopBar({ tab }) {
+  const meta = TAB_META[tab];
+  return (
+    <div style={{
+      background: COLORS.purpleDeep, padding: '18px 18px 16px 18px',
+      borderBottom: `3px solid ${COLORS.yellow}`, flexShrink: 0,
+    }}>
+      <div style={{ fontFamily: 'Archivo Black, sans-serif', color: '#FAF6EC', fontSize: 22, lineHeight: 1.1 }}>
+        {meta.title}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// BOTTOM NAV
+// ---------------------------------------------------------------------------
+
+function BottomNav({ tab, setTab }) {
+  const items = [
+    { id: 'treinos', icon: Dumbbell, label: 'Treinos' },
+    { id: 'guia', icon: BookOpen, label: 'Guia' },
+    { id: 'progresso', icon: LineChart, label: 'Progresso' },
+    { id: 'perfil', icon: User, label: 'Perfil' },
+  ];
+  return (
+    <div style={{
+      position: 'sticky', bottom: 0, left: 0, right: 0, background: '#FAF6EC',
+      borderTop: `1px solid ${COLORS.purpleSoft}`, display: 'flex', flexShrink: 0,
+      boxShadow: '0 -6px 18px rgba(46,16,73,0.06)',
+    }}>
+      {items.map(({ id, icon: Icon, label }) => {
+        const active = tab === id;
+        return (
+          <button key={id} onClick={() => setTab(id)} style={{
+            flex: 1, border: 'none', background: 'transparent', padding: '10px 0 8px 0',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, cursor: 'pointer',
+          }}>
+            <Icon size={20} color={active ? COLORS.purple : '#B9A9CC'} strokeWidth={active ? 2.4 : 2} />
+            <span style={{
+              fontSize: 10, fontWeight: active ? 800 : 600, color: active ? COLORS.purple : '#B9A9CC',
+              fontFamily: 'Manrope, sans-serif',
+            }}>{label}</span>
+            {active && <div style={{ width: 4, height: 4, borderRadius: 2, background: COLORS.yellow, marginTop: 1 }} />}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// CARD / SECTION PRIMITIVES
+// ---------------------------------------------------------------------------
+
+function Card({ children, style }) {
+  return (
+    <div style={{
+      background: '#FFFFFF', borderRadius: 16, padding: 16, border: `1px solid #EDE3F5`,
+      boxShadow: '0 2px 10px rgba(46,16,73,0.04)', ...style,
+    }}>
+      {children}
+    </div>
+  );
+}
+
+function SectionLabel({ children, style }) {
+  return (
+    <div style={{
+      fontFamily: 'Archivo Black, sans-serif', fontSize: 11, letterSpacing: 1.5, color: COLORS.purple,
+      marginBottom: 10, marginTop: 22, textTransform: 'uppercase', ...style,
+    }}>
+      {children}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// TAB: TREINOS (inclui dica importante + placar da semana + check-in do dia)
+// ---------------------------------------------------------------------------
+
+function Treinos({ week, setWeek, activeDay, setActiveDay, getExState, toggleExercise, setCarga, prevCarga, dayCompletion }) {
+  const workout = WORKOUTS.find((w) => w.id === activeDay);
+  const { done, total } = dayCompletion(activeDay, week);
+
+  return (
+    <div>
+      {/* Dica importante - sempre a primeira coisa na tela */}
+      <div style={{
+        background: COLORS.purple, borderRadius: 16, padding: '14px 16px', display: 'flex', gap: 10,
+        alignItems: 'flex-start', marginBottom: 18, boxShadow: '0 4px 14px rgba(75,29,110,0.25)',
+      }}>
+        <Info size={18} color={COLORS.yellow} style={{ flexShrink: 0, marginTop: 1 }} />
+        <div>
+          <div style={{ fontFamily: 'Archivo Black, sans-serif', color: COLORS.yellow, fontSize: 10.5, letterSpacing: 1, marginBottom: 3 }}>
+            DICA IMPORTANTE
+          </div>
+          <div style={{ fontFamily: 'Manrope, sans-serif', color: '#F5EEFB', fontSize: 13, lineHeight: 1.45 }}>
+            {DICA_GERAL}
+          </div>
+        </div>
+      </div>
+
+      {/* Placar da semana */}
+      <div style={{
+        background: COLORS.purpleDeep, borderRadius: 18, padding: '16px 16px', position: 'relative', overflow: 'hidden', marginBottom: 18,
+      }}>
+        <div style={{ position: 'absolute', top: -30, right: -30, width: 100, height: 100, borderRadius: '50%', background: 'rgba(248,195,0,0.08)' }} />
+        <div style={{ fontFamily: 'Manrope, sans-serif', color: '#C9B8DE', fontSize: 11, fontWeight: 700, letterSpacing: 1.5, marginBottom: 4 }}>
+          SEMANA ATUAL
+        </div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+          <span style={{ fontFamily: 'Archivo Black, sans-serif', color: COLORS.yellow, fontSize: 38, lineHeight: 1 }}>
+            {String(week).padStart(2, '0')}
+          </span>
+          <span style={{ fontFamily: 'Manrope, sans-serif', color: '#C9B8DE', fontSize: 14, fontWeight: 700 }}>/ {TOTAL_WEEKS}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 4, marginTop: 12 }}>
+          {Array.from({ length: TOTAL_WEEKS }, (_, i) => i + 1).map((w) => (
+            <button key={w} onClick={() => setWeek(w)} style={{
+              flex: 1, height: 8, borderRadius: 4, border: 'none', cursor: 'pointer',
+              background: w === week ? COLORS.yellow : w < week ? 'rgba(248,195,0,0.35)' : 'rgba(255,255,255,0.12)',
+            }} title={`Semana ${w}`} />
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, overflowX: 'auto', paddingBottom: 2 }}>
+        {WORKOUTS.map((w) => {
+          const active = w.id === activeDay;
+          const { done: d, total: t } = dayCompletion(w.id, week);
+          const complete = d === t;
+          return (
+            <button key={w.id} onClick={() => setActiveDay(w.id)} style={{
+              flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, padding: '9px 14px', borderRadius: 20,
+              border: `1.5px solid ${active ? COLORS.purple : complete ? COLORS.yellow : '#E4D8F0'}`,
+              background: active ? COLORS.purple : '#FFFFFF', cursor: 'pointer',
+              fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: 12.5,
+              color: active ? COLORS.yellow : COLORS.purple,
+            }}>
+              {complete && !active && <Check size={12} color="#B78A00" strokeWidth={3} />}
+              {w.letter} · {w.title}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 12.5, color: '#8577A0', fontWeight: 700 }}>
+          {done}/{total} concluídos
+        </span>
+        {done === total && (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#B78A00', fontSize: 12, fontWeight: 800, fontFamily: 'Manrope, sans-serif' }}>
+            <Flame size={14} /> treino completo
+          </span>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
+        {workout.exercises.map((ex) => (
+          <ExerciseRow key={ex.id} ex={ex} dayId={workout.id}
+            state={getExState(workout.id, ex.id)}
+            onToggle={() => toggleExercise(workout.id, ex.id)}
+            onCarga={(v) => setCarga(workout.id, ex.id, v)}
+            prev={prevCarga(workout.id, ex.id)}
+          />
+        ))}
+      </div>
+
+      {workout.funcional && (
+        <>
+          <SectionLabel>Funcional · {workout.funcional.note}</SectionLabel>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {workout.funcional.exercises.map((ex) => (
+              <ExerciseRow key={ex.id} ex={ex} dayId={workout.id}
+                state={getExState(workout.id, ex.id)}
+                onToggle={() => toggleExercise(workout.id, ex.id)}
+                onCarga={(v) => setCarga(workout.id, ex.id, v)}
+                prev={prevCarga(workout.id, ex.id)}
+                noWeight
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      <SectionLabel>Cardio</SectionLabel>
+      <Card style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{
+          width: 40, height: 40, borderRadius: 10, background: COLORS.yellowSoft,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}>
+          <Flame size={19} color="#B78A00" />
+        </div>
+        <div>
+          <div style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: 13.5, color: COLORS.ink }}>{workout.cardio.duration}</div>
+          <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 12, color: '#8577A0' }}>{workout.cardio.desc}</div>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function ExerciseRow({ ex, state, onToggle, onCarga, prev, noWeight }) {
+  const showWeight = ex.trackWeight === false || noWeight ? false : true;
+  return (
+    <div style={{
+      background: '#FFFFFF', border: `1px solid ${state.checked ? COLORS.yellow : '#EDE3F5'}`,
+      borderRadius: 14, padding: '12px 12px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+        <button onClick={onToggle} style={{
+          width: 24, height: 24, borderRadius: 7, flexShrink: 0, marginTop: 1,
+          border: `2px solid ${state.checked ? COLORS.yellow : '#D9CBEB'}`,
+          background: state.checked ? COLORS.yellow : 'transparent',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+        }}>
+          {state.checked && <Check size={14} color={COLORS.purpleDeep} strokeWidth={3.5} />}
+        </button>
+        <div style={{ flex: 1 }}>
+          <div style={{
+            fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: 13.5, color: COLORS.ink,
+            textDecoration: state.checked ? 'line-through' : 'none', opacity: state.checked ? 0.55 : 1,
+          }}>
+            {ex.name}
+          </div>
+          <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11.5, color: '#8577A0', marginTop: 1 }}>
+            {ex.series}{ex.rest ? ` · descanso ${ex.rest}` : ''}{ex.intensity ? ` · ${ex.intensity}` : ''}
+          </div>
+          {ex.objective && (
+            <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11, color: '#B09FC7', marginTop: 1 }}>
+              {ex.objective}
+            </div>
+          )}
+        </div>
+      </div>
+      {showWeight && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, marginLeft: 34 }}>
+          <input
+            type="text" inputMode="decimal" placeholder="carga (kg)" value={state.carga}
+            onChange={(e) => onCarga(e.target.value)}
+            style={{
+              width: 100, border: `1.5px solid #E4D8F0`, borderRadius: 9, padding: '6px 9px',
+              fontSize: 12.5, fontWeight: 700, color: COLORS.ink,
+            }}
+          />
+          {prev && (
+            <span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11, color: '#B09FC7' }}>
+              semana anterior: {prev}kg
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// TAB: GUIA DE EXECUÇÃO
+// ---------------------------------------------------------------------------
+
+function Guia() {
+  const [open, setOpen] = useState(null);
+  return (
+    <div>
+      <Card style={{ marginBottom: 16, background: COLORS.purpleSoft, border: 'none' }}>
+        <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 12.5, color: COLORS.purple, lineHeight: 1.5 }}>
+          Toque em um exercício para ver como executar, o foco muscular, o erro mais comum e uma dica prática.
+        </div>
+      </Card>
+
+      <SectionLabel style={{ marginTop: 0 }}>Escala de intensidade</SectionLabel>
+      <Card style={{ marginBottom: 16 }}>
+        {RPE_SCALE.map((r, i) => (
+          <div key={r.code} style={{
+            display: 'flex', justifyContent: 'space-between', padding: '7px 0',
+            borderTop: i === 0 ? 'none' : '1px solid #F3EDFA',
+          }}>
+            <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: 12.5, color: COLORS.purple }}>{r.code}</span>
+            <span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 12.5, color: '#6B5A80' }}>{r.label}</span>
+          </div>
+        ))}
+      </Card>
+
+      <SectionLabel style={{ marginTop: 0 }}>Exercícios</SectionLabel>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {GUIDE.map((g, i) => {
+          const isOpen = open === i;
+          return (
+            <div key={g.name} style={{
+              background: '#FFFFFF', borderRadius: 14, border: `1px solid ${isOpen ? COLORS.purple : '#EDE3F5'}`, overflow: 'hidden',
+            }}>
+              <button onClick={() => setOpen(isOpen ? null : i)} style={{
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '12px 14px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left',
+              }}>
+                <div>
+                  <div style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: 13.5, color: COLORS.ink }}>{g.name}</div>
+                  <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11.5, color: '#8577A0' }}>{g.foco}</div>
+                </div>
+                <ChevronDown size={18} color={COLORS.purple} style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s', flexShrink: 0 }} />
+              </button>
+              {isOpen && (
+                <div style={{ padding: '0 14px 14px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <GuideLine label="Como fazer" text={g.como} />
+                  <GuideLine label="Erro comum" text={g.erro} tone="warn" />
+                  <GuideLine label="Dica prática" text={g.dica} tone="tip" />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function GuideLine({ label, text, tone }) {
+  const color = tone === 'warn' ? '#B23A3A' : tone === 'tip' ? '#B78A00' : COLORS.purple;
+  return (
+    <div>
+      <div style={{ fontFamily: 'Archivo Black, sans-serif', fontSize: 9.5, letterSpacing: 1, color, marginBottom: 2 }}>
+        {label.toUpperCase()}
+      </div>
+      <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 12.5, color: '#4A3B5C', lineHeight: 1.45 }}>{text}</div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// TAB: PERFIL
+// ---------------------------------------------------------------------------
+
+function Field({ label, value, onChange, suffix }) {
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11, fontWeight: 700, color: '#8577A0', marginBottom: 5 }}>{label}</div>
+      <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #E4D8F0', borderRadius: 10, padding: '9px 12px' }}>
+        <input value={value} onChange={(e) => onChange(e.target.value)} style={{
+          border: 'none', flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700, color: COLORS.ink, background: 'transparent',
+        }} />
+        {suffix && <span style={{ fontSize: 12, color: '#B09FC7', fontWeight: 700, flexShrink: 0, marginLeft: 6 }}>{suffix}</span>}
+      </div>
+    </div>
+  );
+}
+
+function InfoRow({ label, value, last }) {
+  return (
+    <div style={{
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10,
+      padding: '10px 0', borderBottom: last ? 'none' : '1px solid #F3EDFA',
+    }}>
+      <span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 12.5, fontWeight: 700, color: '#8577A0' }}>{label}</span>
+      <span style={{
+        fontFamily: 'Manrope, sans-serif', fontSize: 13, fontWeight: 700, color: COLORS.ink,
+        textAlign: 'right', maxWidth: '62%',
+      }}>{value}</span>
+    </div>
+  );
+}
+
+function StatBox({ label, value, suffix }) {
+  return (
+    <div style={{
+      background: COLORS.purpleSoft, borderRadius: 12, padding: '12px 10px',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
+    }}>
+      <span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 10.5, fontWeight: 700, color: COLORS.purple, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+        {label}
+      </span>
+      <span style={{ fontFamily: 'Archivo Black, sans-serif', fontSize: 19, color: COLORS.purpleDeep, lineHeight: 1 }}>
+        {value}<span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11, fontWeight: 700, color: '#8577A0', marginLeft: 2 }}>{suffix}</span>
+      </span>
+    </div>
+  );
+}
+
+function Perfil({ perfil, onChange }) {
+  const setPeso = (v) => onChange({ ...perfil, pesoAtual: v });
+  return (
+    <div>
+      <div style={{
+        background: COLORS.purpleDeep, borderRadius: 16, padding: 16, marginBottom: 18,
+        display: 'flex', alignItems: 'center', gap: 12,
+      }}>
+        <div style={{
+          width: 46, height: 46, borderRadius: '50%', background: COLORS.yellow,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}>
+          <span style={{ fontFamily: 'Archivo Black, sans-serif', color: COLORS.purpleDeep, fontSize: 18 }}>
+            {perfil.nome?.trim()?.[0]?.toUpperCase() || '?'}
+          </span>
+        </div>
+        <div>
+          <div style={{ fontFamily: 'Manrope, sans-serif', color: '#fff', fontWeight: 800, fontSize: 14.5 }}>{perfil.nome}</div>
+          <div style={{ fontFamily: 'Manrope, sans-serif', color: '#C9B8DE', fontSize: 11.5 }}>{perfil.idade} anos</div>
+        </div>
+      </div>
+
+      <SectionLabel>Dados pessoais</SectionLabel>
+      <Card>
+        <InfoRow label="Nome" value={perfil.nome} />
+        <InfoRow label="Idade" value={`${perfil.idade} anos`} last />
+      </Card>
+
+      <SectionLabel>Peso</SectionLabel>
+      <Card>
+        <Field label="Peso atual" value={perfil.pesoAtual} onChange={setPeso} suffix="kg" />
+      </Card>
+
+      <SectionLabel>Medidas</SectionLabel>
+      <Card>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <StatBox label="Cintura" value={perfil.cintura} suffix="cm" />
+          <StatBox label="Quadril" value={perfil.quadril} suffix="cm" />
+          <StatBox label="Bíceps" value={perfil.biceps} suffix="cm" />
+          <StatBox label="Coxa" value={perfil.coxa} suffix="cm" />
+        </div>
+      </Card>
+
+      <SectionLabel>Objetivo e obstáculo</SectionLabel>
+      <Card>
+        <InfoRow label="Objetivo" value={perfil.objetivo} />
+        <InfoRow label="Obstáculo" value={perfil.obstaculo} last />
+      </Card>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// TAB: PROGRESSO (12 semanas)
+// ---------------------------------------------------------------------------
+
+function Progresso({ avaliacao, updateAval }) {
+  const [openWeek, setOpenWeek] = useState(1);
+  return (
+    <div>
+      <Card style={{ marginBottom: 16, background: COLORS.purpleSoft, border: 'none' }}>
+        <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 12.5, color: COLORS.purple, lineHeight: 1.5 }}>
+          Registre como foi cada semana. A escala vai de 1 (baixo) a 5 (alto) — exceto frequência, que é o número de treinos feitos.
+        </div>
+      </Card>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {Array.from({ length: TOTAL_WEEKS }, (_, i) => i + 1).map((w) => {
+          const isOpen = openWeek === w;
+          const data = avaliacao[w] || {};
+          const filled = AVAL_FIELDS.filter((f) => data[f.key] !== undefined && data[f.key] !== '').length;
+          return (
+            <div key={w} style={{
+              background: '#fff', borderRadius: 14, border: `1px solid ${isOpen ? COLORS.purple : '#EDE3F5'}`, overflow: 'hidden',
+            }}>
+              <button onClick={() => setOpenWeek(isOpen ? null : w)} style={{
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '12px 14px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{
+                    width: 30, height: 30, borderRadius: 8, background: filled === AVAL_FIELDS.length ? COLORS.yellow : COLORS.purpleSoft,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}>
+                    <span style={{ fontFamily: 'Archivo Black, sans-serif', fontSize: 12, color: COLORS.purple }}>{w}</span>
+                  </div>
+                  <div style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: 13.5, color: COLORS.ink }}>Semana {w}</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 11, color: '#B09FC7', fontWeight: 700 }}>{filled}/{AVAL_FIELDS.length}</span>
+                  <ChevronDown size={17} color={COLORS.purple} style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
+                </div>
+              </button>
+              {isOpen && (
+                <div style={{ padding: '2px 14px 16px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {AVAL_FIELDS.map((f) => (
+                    <div key={f.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                      <span style={{ fontFamily: 'Manrope, sans-serif', fontSize: 12.5, fontWeight: 700, color: '#4A3B5C' }}>{f.label}</span>
+                      {f.type === 'scale' ? (
+                        <ScaleInput value={data[f.key]} onChange={(v) => updateAval(w, f.key, v)} />
+                      ) : (
+                        <input
+                          type="number" min="0" max="4" placeholder={f.placeholder}
+                          value={data[f.key] ?? ''} onChange={(e) => updateAval(w, f.key, e.target.value)}
+                          style={{ width: 70, border: '1.5px solid #E4D8F0', borderRadius: 8, padding: '6px 9px', fontSize: 12.5, fontWeight: 700, color: COLORS.ink }}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
