@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Sabrina • Treino</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FBF7FA;
+    --surface:#FFFFFF;
+    --card:#FFFFFF;
+    --card2:#F5EEF7;
+    --border:#EADCE8;
+    --rose:#D98CA3;
+    --rose-dark:#B96380;
+    --rose-glow:rgba(217,140,163,0.16);
+    --purple:#9B6BD1;
+    --purple-dark:#7550A8;
+    --purple-glow:rgba(155,107,209,0.18);
+    --text:#3A2E3D;
+    --muted:#9C8FA0;
+    --faint:#DED0DE;
+    --good:#7FAE8C;
+    --good-glow:rgba(127,174,140,0.16);
+    --danger:#C97575;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{background:var(--bg);color:var(--text);font-family:'Jost',sans-serif;font-weight:300;overflow-x:hidden;}
+  h1,h2,h3,.display{font-family:'Cormorant Garamond',serif;}
+  #splash{
+    position:fixed;inset:0;background:var(--bg);z-index:999;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    transition:opacity .5s ease, visibility .5s ease;
+  }
+  #splash.hide{opacity:0;visibility:hidden;}
+  .splash-mark{
+    width:64px;height:64px;border-radius:50%;
+    background:linear-gradient(145deg,var(--rose),var(--purple));
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:400;font-size:28px;color:#fff;
+    box-shadow:0 8px 30px var(--rose-glow);
+    margin-bottom:18px;
+  }
+  .splash-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:500;font-size:24px;letter-spacing:0.02em;color:var(--purple-dark);}
+  .splash-sub{color:var(--muted);font-size:12px;margin-top:6px;letter-spacing:0.04em;}
+
+  #app{opacity:0;transition:opacity .4s ease;padding-bottom:92px;min-height:100vh;}
+  #app.visible{opacity:1;}
+
+  header.topbar{
+    position:sticky;top:0;z-index:50;
+    background:rgba(251,247,250,0.92);backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);
+    padding:16px 18px 14px;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .topbar-left{display:flex;align-items:center;gap:10px;}
+  .topbar-mark{width:32px;height:32px;border-radius:50%;background:linear-gradient(145deg,var(--rose),var(--purple));display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond';font-style:italic;font-weight:500;font-size:14px;color:#fff;}
+  .topbar-name{font-family:'Cormorant Garamond';font-style:italic;font-weight:500;font-size:16px;color:var(--purple-dark);}
+  .topbar-sub{font-size:10px;color:var(--muted);letter-spacing:0.04em;}
+  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 6px var(--good);}
+  .status-wrap{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted);}
+
+  .page{display:none;padding:18px;animation:fadeIn .3s ease;}
+  .page.active{display:block;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  .section-eyebrow{font-size:11px;color:var(--purple);text-transform:uppercase;letter-spacing:0.12em;font-weight:500;margin-bottom:4px;}
+  .section-title{font-family:'Cormorant Garamond';font-style:italic;font-size:23px;font-weight:500;margin-bottom:14px;color:var(--text);}
+
+  .treino-switch{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:2px;}
+  .treino-switch::-webkit-scrollbar{display:none;}
+  .treino-btn{
+    flex-shrink:0;padding:10px 16px;text-align:center;border-radius:12px;
+    background:var(--card);border:1px solid var(--border);
+    font-family:'Cormorant Garamond';font-weight:500;font-size:14px;color:var(--muted);
+    cursor:pointer;transition:all .2s;white-space:nowrap;
+  }
+  .treino-btn.active{background:linear-gradient(145deg,var(--rose),var(--rose-dark));color:#fff;border-color:transparent;box-shadow:0 4px 16px var(--rose-glow);}
+
+  .week-nav{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    padding:10px 14px;margin-bottom:16px;
+  }
+  .week-nav button{
+    width:34px;height:34px;border-radius:10px;background:var(--card2);border:1px solid var(--border);
+    color:var(--purple-dark);font-size:16px;cursor:pointer;
+  }
+  .week-nav button:disabled{opacity:0.3;cursor:not-allowed;}
+  .week-label{font-family:'Cormorant Garamond';font-style:italic;font-weight:500;font-size:15px;}
+  .week-sub{font-size:10px;color:var(--muted);text-align:center;}
+
+  .tip-card{
+    background:linear-gradient(135deg,#F3E9EE,#EFE7F5);
+    border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:18px;
+    display:flex;gap:12px;align-items:flex-start;
+  }
+  .tip-icon{font-size:18px;line-height:1;}
+  .tip-text{font-size:12.5px;color:#5c4463;line-height:1.55;}
+  .tip-label{font-size:10px;color:var(--purple-dark);text-transform:uppercase;letter-spacing:0.08em;font-weight:600;margin-bottom:3px;}
+
+  .ex-card{
+    background:var(--card);border:1px solid var(--border);border-radius:16px;
+    padding:14px 16px;margin-bottom:12px;transition:border-color .2s;
+    box-shadow:0 2px 10px rgba(217,140,163,0.05);
+  }
+  .ex-card.done{border-color:var(--good);background:linear-gradient(180deg,var(--good-glow),var(--card));}
+  .ex-card.cardio{background:linear-gradient(180deg,#F0E9F5,var(--card));}
+  .ex-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+  .ex-name-wrap{display:flex;align-items:flex-start;gap:10px;flex:1;}
+  .checkbox{
+    width:24px;height:24px;border-radius:50%;border:2px solid var(--faint);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;
+    transition:all .2s;margin-top:1px;
+  }
+  .checkbox.checked{background:var(--good);border-color:var(--good);}
+  .checkbox.checked::after{content:"✓";color:#fff;font-size:13px;font-weight:700;}
+  .ex-name{font-family:'Cormorant Garamond';font-weight:500;font-size:15.5px;line-height:1.3;}
+  .ex-meta{font-size:11px;color:var(--muted);margin-top:3px;}
+  .ex-obj{font-size:11px;color:#a87f96;margin-top:2px;font-style:italic;}
+  .rpe-tag{
+    font-size:10px;font-weight:600;padding:3px 9px;border-radius:8px;white-space:nowrap;
+    background:var(--card2);color:var(--purple-dark);border:1px solid var(--border);
+  }
+  .load-row{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+  .load-label{font-size:11px;color:var(--muted);margin-right:auto;}
+  .load-btn{
+    width:32px;height:32px;border-radius:10px;background:var(--card2);border:1px solid var(--border);
+    color:var(--rose-dark);font-size:17px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  .load-val{font-family:'Cormorant Garamond';font-size:16px;font-weight:500;min-width:56px;text-align:center;}
+  .prog-note{font-size:10.5px;color:var(--muted);margin-top:8px;}
+
+  .finish-btn{
+    width:100%;padding:16px;border-radius:16px;border:none;margin-top:8px;
+    background:linear-gradient(135deg,var(--rose),var(--purple));
+    color:#fff;font-family:'Cormorant Garamond';font-weight:500;font-size:15px;letter-spacing:0.03em;
+    cursor:pointer;box-shadow:0 6px 20px var(--rose-glow);
+  }
+  .finish-btn:active{transform:scale(0.98);}
+  .finish-btn.finished{background:var(--good);box-shadow:none;}
+
+  .search-box{
+    width:100%;padding:12px 14px;border-radius:14px;background:var(--card);
+    border:1px solid var(--border);color:var(--text);font-size:13px;margin-bottom:16px;font-family:'Jost';
+  }
+  .search-box::placeholder{color:var(--faint);}
+
+  .rpe-scale{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;margin-bottom:20px;}
+  .rpe-item{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:12.5px;}
+  .rpe-num{
+    width:28px;height:28px;border-radius:50%;background:var(--card2);
+    display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond';font-weight:500;font-size:12px;color:var(--purple-dark);flex-shrink:0;border:1px solid var(--border);
+  }
+  .rpe-desc{color:#6b5464;}
+
+  .guide-card{background:var(--card);border:1px solid var(--border);border-radius:16px;margin-bottom:10px;overflow:hidden;}
+  .guide-head{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+  .guide-head .ex-name{margin:0;}
+  .guide-chevron{color:var(--rose-dark);font-size:14px;transition:transform .25s;}
+  .guide-chevron.open{transform:rotate(90deg);}
+  .guide-body{max-height:0;overflow:hidden;transition:max-height .3s ease;}
+  .guide-body.open{max-height:600px;}
+  .guide-body-inner{padding:0 16px 16px;}
+  .guide-row{margin-bottom:10px;}
+  .guide-row-label{font-size:10px;color:var(--purple-dark);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;margin-bottom:3px;}
+  .guide-row-text{font-size:12.5px;color:#6b5464;line-height:1.5;}
+
+  .eval-week-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:16px;}
+  .eval-week-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .eval-week-title{font-family:'Cormorant Garamond';font-style:italic;font-size:18px;font-weight:500;color:var(--text);}
+  .eval-week-badge{font-size:10px;font-weight:600;padding:4px 12px;border-radius:20px;text-transform:uppercase;letter-spacing:0.04em;background:var(--card2);color:var(--muted);}
+  .eval-week-badge.saved{background:var(--good-glow);color:var(--good);}
+
+  .eval-cat-block{margin-bottom:14px;}
+  .eval-cat-name{font-family:'Cormorant Garamond';font-weight:500;font-size:13px;text-transform:uppercase;letter-spacing:0.05em;color:var(--purple-dark);margin-bottom:8px;}
+  .nota-row{display:flex;gap:8px;}
+  .nota-btn{
+    flex:1;aspect-ratio:1;border-radius:12px;background:var(--card2);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond';font-weight:500;font-size:15px;color:var(--muted);
+    cursor:pointer;transition:all .15s;
+  }
+  .nota-btn.selected{background:var(--purple);color:#fff;border-color:var(--purple);box-shadow:0 4px 12px var(--purple-glow);}
+
+  .eval-week-obs{
+    width:100%;padding:11px 14px;border-radius:12px;background:var(--card2);border:1px solid var(--border);
+    color:var(--text);font-size:13px;font-family:'Jost';resize:none;margin-top:4px;margin-bottom:14px;
+  }
+  .eval-week-save{
+    width:100%;padding:14px;border-radius:14px;border:none;
+    background:linear-gradient(135deg,var(--rose),var(--purple));
+    color:#fff;font-family:'Cormorant Garamond';font-weight:500;font-size:14px;letter-spacing:0.03em;cursor:pointer;
+  }
+  .eval-week-save.saved{background:var(--good);}
+
+  .field-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin:16px 0 6px;}
+  .field-input{
+    width:100%;padding:11px 14px;border-radius:12px;background:var(--card2);border:1px solid var(--border);
+    color:var(--text);font-size:13px;font-family:'Jost';resize:none;
+  }
+  .save-btn{
+    width:100%;padding:15px;border-radius:16px;border:none;margin-top:18px;
+    background:linear-gradient(135deg,var(--rose),var(--purple));
+    color:#fff;font-family:'Cormorant Garamond';font-weight:500;font-size:14px;letter-spacing:0.03em;cursor:pointer;
+  }
+  .save-btn.saved{background:var(--good);}
+
+  .profile-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:4px 16px;margin-bottom:16px;}
+  .info-row{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid var(--border);gap:10px;}
+  .info-row:last-child{border-bottom:none;}
+  .info-key{font-size:12px;color:var(--muted);}
+  .info-val{font-family:'Cormorant Garamond';font-size:14px;font-weight:500;text-align:right;}
+  .alert-card{
+    background:rgba(201,117,117,0.08);border:1px solid rgba(201,117,117,0.3);border-radius:14px;
+    padding:13px 15px;margin-bottom:16px;display:flex;gap:10px;
+  }
+  .alert-card .tip-text{color:#8a4c4c;}
+  .alert-card .tip-label{color:var(--danger);}
+
+  .measure-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+  .measure-item{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;}
+  .measure-key{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;}
+  .measure-val{font-family:'Cormorant Garamond';font-size:17px;font-weight:500;color:var(--purple-dark);margin-top:2px;}
+
+  .weight-editor{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;text-align:center;}
+  .weight-editor .cur-weight{font-family:'Cormorant Garamond';font-style:italic;font-size:36px;font-weight:500;color:var(--purple-dark);margin:8px 0;}
+  .weight-controls{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:10px;}
+  .weight-btn{
+    width:44px;height:44px;border-radius:14px;background:var(--card2);border:1px solid var(--border);
+    color:var(--rose-dark);font-size:20px;cursor:pointer;
+  }
+
+  .prog-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;}
+  .prog-name{font-family:'Cormorant Garamond';font-weight:500;font-size:15px;margin-bottom:8px;}
+  .prog-peso{display:inline-block;font-size:11px;background:var(--card2);border:1px solid var(--border);color:var(--purple-dark);padding:3px 10px;border-radius:8px;font-family:'Cormorant Garamond';font-weight:500;}
+
+  nav.tabbar{
+    position:fixed;bottom:0;left:0;right:0;z-index:60;
+    background:rgba(255,255,255,0.97);backdrop-filter:blur(12px);
+    border-top:1px solid var(--border);
+    display:flex;padding:9px 4px calc(9px + env(safe-area-inset-bottom));
+  }
+  .tab-item{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
+    color:var(--faint);cursor:pointer;padding:4px 0;
+  }
+  .tab-item.active{color:var(--purple-dark);}
+  .tab-icon{width:19px;height:19px;}
+  .tab-label{font-size:9px;font-weight:500;letter-spacing:0.01em;}
+
+  .toast{
+    position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--good);color:#fff;padding:12px 22px;border-radius:30px;
+    font-family:'Cormorant Garamond';font-weight:500;font-size:13px;z-index:200;opacity:0;
+    transition:all .3s ease;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.15);
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .empty-guide{text-align:center;color:var(--muted);font-size:13px;padding:30px 0;}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="splash-mark">S</div>
+  <div class="splash-title">Sabrina</div>
+  <div class="splash-sub">Preparando seu treino...</div>
+</div>
+
+<div id="app">
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-mark">S</div>
+      <div>
+        <div class="topbar-name">Sabrina Macedo</div>
+        <div class="topbar-sub">Emagrecimento & massa muscular</div>
+      </div>
+    </div>
+    <div class="status-wrap"><span class="status-dot"></span>Sincronizado</div>
+  </header>
+
+  <!-- TREINO -->
+  <div class="page active" id="page-treino">
+    <div class="section-eyebrow">Hoje</div>
+    <div class="section-title">Treino</div>
+
+    <div class="treino-switch" id="treino-switch"></div>
+
+    <div class="week-nav">
+      <button id="week-prev" onclick="changeWeek(-1)">‹</button>
+      <div>
+        <div class="week-label" id="week-label">Semana 1</div>
+        <div class="week-sub" id="week-sub">de 13 semanas</div>
+      </div>
+      <button id="week-next" onclick="changeWeek(1)">›</button>
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-icon">✿</div>
+      <div>
+        <div class="tip-label">Dica geral</div>
+        <div class="tip-text">Mantenha a respiração controlada para contração do abdômen — isso melhora a maioria dos movimentos.</div>
+      </div>
+    </div>
+
+    <div id="ex-container"></div>
+
+    <button class="finish-btn" id="finish-btn" onclick="finishTreino()">Finalizar Treino</button>
+  </div>
+
+  <!-- GUIA -->
+  <div class="page" id="page-guia">
+    <div class="section-eyebrow">Referência</div>
+    <div class="section-title">Guia de Execução</div>
+
+    <div class="rpe-scale">
+      <div class="tip-label" style="margin-bottom:8px;">Escala de intensidade (RPE)</div>
+      <div class="rpe-item"><div class="rpe-num">6</div><div class="rpe-desc">Confortável</div></div>
+      <div class="rpe-item"><div class="rpe-num">7</div><div class="rpe-desc">Moderadamente difícil</div></div>
+      <div class="rpe-item"><div class="rpe-num">8</div><div class="rpe-desc">Difícil, mas com margem</div></div>
+      <div class="rpe-item"><div class="rpe-num">9</div><div class="rpe-desc">Quase no limite</div></div>
+      <div class="rpe-item"><div class="rpe-num">10</div><div class="rpe-desc">Esforço máximo</div></div>
+    </div>
+
+    <input class="search-box" id="guia-search" placeholder="Buscar exercício..." oninput="renderGuide()">
+    <div id="guia-container"></div>
+  </div>
+
+  <!-- AVALIAÇÃO -->
+  <div class="page" id="page-avaliacao">
+    <div class="section-eyebrow">Feedback</div>
+    <div class="section-title">Avaliação Semanal</div>
+
+    <div id="eval-container"></div>
+  </div>
+
+  <!-- PERFIL -->
+  <div class="page" id="page-perfil">
+    <div class="section-eyebrow">Aluna</div>
+    <div class="section-title">Perfil</div>
+
+    <div class="alert-card">
+      <div class="tip-icon">◆</div>
+      <div>
+        <div class="tip-label">Obstáculo</div>
+        <div class="tip-text">Procrastinação.</div>
+      </div>
+    </div>
+
+    <div class="profile-card">
+      <div class="info-row"><span class="info-key">Nome</span><span class="info-val">Sabrina Tolentino de Macedo</span></div>
+      <div class="info-row"><span class="info-key">Idade</span><span class="info-val">26 anos</span></div>
+      <div class="info-row"><span class="info-key">Objetivo</span><span class="info-val">Emagrecimento / Massa muscular</span></div>
+    </div>
+
+    <div class="field-label">Medidas de referência</div>
+    <div class="measure-grid">
+      <div class="measure-item"><div class="measure-key">Cintura</div><div class="measure-val">88 cm</div></div>
+      <div class="measure-item"><div class="measure-key">Quadril</div><div class="measure-val">118 cm</div></div>
+      <div class="measure-item"><div class="measure-key">Bíceps</div><div class="measure-val">29 cm</div></div>
+      <div class="measure-item"><div class="measure-key">Coxa</div><div class="measure-val">63 cm</div></div>
+    </div>
+
+    <div class="field-label">Peso atual</div>
+    <div class="weight-editor">
+      <div class="weight-controls">
+        <button class="weight-btn" onclick="adjustWeight(-0.5)">−</button>
+        <div class="cur-weight" id="cur-weight">79.0<span style="font-size:16px;color:var(--muted);"> kg</span></div>
+        <button class="weight-btn" onclick="adjustWeight(0.5)">+</button>
+      </div>
+    </div>
+    <button class="save-btn" id="weight-save-btn" onclick="saveWeight()">Salvar Peso</button>
+  </div>
+</div>
+
+<nav class="tabbar">
+  <div class="tab-item active" data-page="treino" onclick="switchPage('treino')">
+    <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5l11 11M4 9l3-3m10 10l3 3M2 12l4-4m12 8l4 4M6.5 17.5l-3 3m14-17l3 3M9 4l-4 4m11 11l4-4" stroke-linecap="round"/></svg>
+    <div class="tab-label">Treino</div>
+  </div>
+  <div class="tab-item" data-page="guia" onclick="switchPage('guia')">
+    <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2.5" stroke-linecap="round"/></svg>
+    <div class="tab-label">Guia</div>
+  </div>
+  <div class="tab-item" data-page="avaliacao" onclick="switchPage('avaliacao')">
+    <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+    <div class="tab-label">Avaliação</div>
+  </div>
+  <div class="tab-item" data-page="perfil" onclick="switchPage('perfil')">
+    <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+    <div class="tab-label">Perfil</div>
+  </div>
+</nav>
+
+<div class="toast" id="toast">Salvo com sucesso</div>
+
+<script>
+// ── FIREBASE CONFIG ──────────────────────────────────────────────────────
+var FIREBASE_URL = 'https://helloradana-consultoria-default-rtdb.firebaseio.com';
+var ALUNO_ID = 'sabrina-macedo';
+var TOTAL_WEEKS = 13;
+
+// ── DATA: EXERCÍCIOS POR TREINO ──────────────────────────────────────────
+var TREINOS = {
+  A: [
+    {id:'mob-a', nome:'Mobilidade', series:'2 séries', reps:'', descanso:'45s', rpe:'Leve', obj:'Articulações', carga:false},
+    {id:'puxada-barra', nome:'Puxada Alta c/ Barra', series:'3x', reps:'10', descanso:'1min', rpe:'7', obj:'Desenvolvimento das costas', carga:true},
+    {id:'puxada-triangulo', nome:'Puxada Alta c/ Triângulo', series:'3x', reps:'10', descanso:'1min', rpe:'7', obj:'Fortalecimento das dorsais', carga:true},
+    {id:'remada-maquina', nome:'Remada na Máquina', series:'3x', reps:'10', descanso:'1min', rpe:'7', obj:'Fortalecimento miolo das costas', carga:true},
+    {id:'crucifixo-inverso', nome:'Crucifixo Inverso na Máquina', series:'3x', reps:'10', descanso:'1min', rpe:'7', obj:'Deltoides posterior e postura', carga:true},
+    {id:'cardio-a', nome:'Cardio Bike HIIT', series:'30 min', reps:'', descanso:'', rpe:'Moderado', obj:'30s forte · 90s leve', carga:false, cardio:true}
+  ],
+  B: [
+    {id:'mob-b', nome:'Mobilidade', series:'2 séries', reps:'', descanso:'45s', rpe:'Leve', obj:'Articulações', carga:false},
+    {id:'cadeira-extensora', nome:'Cadeira Extensora', series:'4x', reps:'10', descanso:'1min', rpe:'7', obj:'Isolamento de quadríceps', carga:true},
+    {id:'legpress45', nome:'Legpress 45', series:'3x', reps:'10', descanso:'1min', rpe:'7', obj:'Força quadríceps/glúteo', carga:true},
+    {id:'mesa-flexora', nome:'Mesa Flexora', series:'3x', reps:'10', descanso:'1min', rpe:'6', obj:'Desenvolvimento de isquiotibiais', carga:true},
+    {id:'cadeira-adutora', nome:'Cadeira Adutora', series:'4x', reps:'10', descanso:'1min', rpe:'7', obj:'Ativação de adutores', carga:true},
+    {id:'panturrilha', nome:'Panturrilha', series:'3x', reps:'15', descanso:'1min', rpe:'8', obj:'Fortalecimento de panturrilha', carga:true},
+    {id:'cardio-b', nome:'Cardio Bike HIIT', series:'30 min', reps:'', descanso:'', rpe:'Moderado', obj:'30s forte · 90s leve', carga:false, cardio:true}
+  ],
+  C: [
+    {id:'mob-c', nome:'Mobilidade', series:'2 séries', reps:'', descanso:'45s', rpe:'Leve', obj:'Articulações', carga:false},
+    {id:'peekdeek', nome:'Peekdeek', series:'3x', reps:'10', descanso:'1min', rpe:'7', obj:'Isolamento do peitoral', carga:true},
+    {id:'desenvolvimento', nome:'Desenvolvimento', series:'3x', reps:'10', descanso:'1min', rpe:'7', obj:'Força de ombros', carga:true},
+    {id:'elevacao-lateral', nome:'Elevação Lateral', series:'3x', reps:'10', descanso:'1min', rpe:'7', obj:'Hipertrofia do deltoide lateral', carga:true},
+    {id:'biceps-martelo', nome:'Bíceps Martelo', series:'3x', reps:'10', descanso:'1min', rpe:'8', obj:'Desenvolvimento braquial e braquiorradial', carga:true},
+    {id:'triceps-corda', nome:'Tríceps Corda na Polia', series:'3x', reps:'10', descanso:'1min', rpe:'8', obj:'Extensão e definição do tríceps', carga:true},
+    {id:'agachamento-livre', nome:'Agachamento Livre', series:'3x', reps:'15', descanso:'circuito 2min', rpe:'Funcional', obj:'Gasto calórico', carga:false},
+    {id:'polichinelo', nome:'Polichinelo', series:'3x', reps:'20', descanso:'', rpe:'Funcional', obj:'Gasto calórico', carga:false},
+    {id:'joelho-cotovelo', nome:'Joelho x Cotovelo', series:'3x', reps:'15', descanso:'', rpe:'Funcional', obj:'Gasto calórico', carga:false},
+    {id:'corridinho', nome:'Corridinho pra Frente/Trás', series:'3x', reps:'1min', descanso:'', rpe:'Funcional', obj:'Gasto calórico', carga:false},
+    {id:'cardio-c', nome:'Caminhada Inclinada', series:'15 min', reps:'5km/h', descanso:'', rpe:'Leve', obj:'Condicionamento', carga:false, cardio:true}
+  ],
+  D: [
+    {id:'mob-d', nome:'Mobilidade', series:'2 séries', reps:'', descanso:'45s', rpe:'Leve', obj:'Articulações', carga:false},
+    {id:'caminhada-inclinada-d', nome:'Caminhada Inclinada', series:'5 min', reps:'', descanso:'', rpe:'Leve', obj:'Ativar circulação', carga:false, cardio:true},
+    {id:'agachamento-kettlebell', nome:'Agachamento c/ Kettlebell', series:'10x', reps:'', descanso:'circuito 2min30s', rpe:'Leve/moderado', obj:'Força de pernas', carga:true},
+    {id:'shoulder-cars', nome:'Shoulder Cars', series:'12x', reps:'cada lado', descanso:'', rpe:'Leve/moderado', obj:'Estabilidade e costas', carga:false},
+    {id:'stepup-caixa', nome:'Step Up em Caixa', series:'10x', reps:'cada lado', descanso:'', rpe:'Leve/moderado', obj:'Força unilateral', carga:false},
+    {id:'marcha-estacionaria', nome:'Marcha Estacionária c/ Joelho Alto e Tornozeleira', series:'30s', reps:'', descanso:'circuito 2min30s', rpe:'Leve/moderado', obj:'Coordenação e cardio', carga:false},
+    {id:'farmer-walk', nome:'Farmer Walk', series:'30s', reps:'', descanso:'', rpe:'Leve/moderado', obj:'Core', carga:true},
+    {id:'prancha', nome:'Prancha', series:'30s', reps:'', descanso:'', rpe:'Leve/moderado', obj:'Estabilidade do core', carga:false},
+    {id:'cardio-d', nome:'Caminhada Inclinada', series:'20 min', reps:'5km/h', descanso:'', rpe:'Leve', obj:'Condicionamento', carga:false, cardio:true}
+  ]
+};
+
+var TREINO_LABELS = {A:'Costas/Ombro', B:'Pernas', C:'Peito/Funcional', D:'Funcional+Cardio'};
+
+// ── DATA: GUIA DE EXECUÇÃO ────────────────────────────────────────────────
+var GUIA = [
+  {nome:'Mobilidade', como:'Realize movimentos lentos e controlados buscando amplitude sem compensação.', foco:'Articulações', erro:'Fazer rápido com pouca amplitude.', dica:'Priorize qualidade do movimento e não velocidade.'},
+  {nome:'Puxada Alta c/ Barra', como:'Puxe a barra em direção à parte superior do peito, mantendo o peito aberto e os cotovelos para baixo, voltados para fora.', foco:'Latíssimo do dorso', erro:'Puxar atrás da cabeça ou balançar o corpo.', dica:'Pense em aproximar os cotovelos do quadril, esmagando as costas.'},
+  {nome:'Puxada Alta c/ Triângulo', como:'Puxe o triângulo em direção ao peito, contraindo as escápulas e levando os cotovelos para trás.', foco:'Desenvolvimento dorsais', erro:'Executar apenas com os braços.', dica:'Inicie o movimento contraindo as escápulas.'},
+  {nome:'Remada na Máquina', como:'Mão na posição neutra, de lado, peito estufado; reme até o braço ficar na linha das costas.', foco:'Costas', erro:'Girar o tronco ou ultrapassar excessivamente a linha das costas.', dica:'Mantenha o movimento controlado e concentre-se na escápula.'},
+  {nome:'Crucifixo Inverso na Máquina', como:'Mão com pegada supinada na linha do ombro; abra os braços até a linha das costas (não ultrapassar), segure 1–2s na força e volte controlado.', foco:'Deltoide posterior e parte alta das costas', erro:'Jogar o corpo para trás ou usar impulso.', dica:'Mantenha tensão contínua durante toda a série.'},
+  {nome:'Polichinelo', como:'Coordene a abertura simultânea de braços e pernas em ritmo constante.', foco:'Condicionamento cardiovascular', erro:'Perder o ritmo ou aterrissar de forma brusca.', dica:'Cuidado com o impacto.'},
+  {nome:'Cadeira Extensora', como:'Pés levemente virados para fora, sem estender totalmente os joelhos; segure na força, desça controlado.', foco:'Quadríceps', erro:'Travar os joelhos, superestender ou relaxar os pés demais; gangorra contínua.', dica:'Suba contando 2 e desça contando 3.'},
+  {nome:'Legpress 45', como:'Pernas na linha do ombro, pés levemente inclinados para fora; movimento de empurro, segurando mais embaixo do que em cima.', foco:'Quadríceps e glúteo', erro:'Tirar o quadril do banco ou deixar os joelhos superestendidos.', dica:'Pés firmes e lombar apoiada no banco.'},
+  {nome:'Mesa Flexora', como:'Flexione os joelhos aproximando os calcanhares dos glúteos e retorne lentamente, mantendo o quadril estável.', foco:'Posterior de coxa', erro:'Tirar o quadril do banco ou usar impulso.', dica:'Controle a volta e mantenha o abdômen ativo.'},
+  {nome:'Cadeira Adutora', como:'Segure na força 2 segundos, solte controlado, com peso moderado para sentir bem o músculo.', foco:'Adutores da coxa', erro:'Impulsionar demais ou bater os pesos.', dica:'Aperte por 2 segundos na contração do músculo.'},
+  {nome:'Panturrilha', como:'Suba o máximo possível, segure 2 segundos e desça até alongar bem a panturrilha.', foco:'Panturrilhas', erro:'Fazer movimento rápido ou com pouca amplitude.', dica:'O que fortalece a panturrilha é a isometria e a amplitude do movimento.'},
+  {nome:'Peekdeek', como:'Banco posicionado com a mão na altura do peito (linha do mamilo); abra estufando o peito e feche esmagando o peito.', foco:'Peitoral', erro:'Encolher os ombros ou inclinar a cabeça para frente, perdendo a postura.', dica:'Faça uma pequena pausa na contração.'},
+  {nome:'Desenvolvimento', como:'Empurre os halteres para cima da cabeça e retorne até a mão ficar na altura do nariz, braços/mãos voltados mais para diagonal.', foco:'Deltoides e estabilidade de ombros', erro:'Arquear excessivamente a lombar ou abrir os braços para trás demais.', dica:'Contraia o abdômen durante o movimento.'},
+  {nome:'Elevação Lateral', como:'Mãos para baixo, braço levemente fechado ao corpo e flexionado para dentro; suba somente até a altura do ombro.', foco:'Deltoide lateral', erro:'Encolher o ombro ou balançar o corpo.', dica:'Mantenha os cotovelos levemente flexionados durante o movimento.'},
+  {nome:'Bíceps Martelo', como:'Flexione os cotovelos com pegada neutra, mantendo os braços próximos ao corpo.', foco:'Braquial e braquiorradial', erro:'Balançar o tronco e usar impulso para subir a carga.', dica:'Movimento mais controlado.'},
+  {nome:'Tríceps Corda na Polia', como:'Coluna levemente inclinada, movimento para baixo (não para o corpo); desça em 3 e suba em 3, controlado.', foco:'Contração completa do tríceps', erro:'Usar o tronco para gerar impulso.', dica:'Separe a corda apenas na extensão final dos cotovelos.'},
+  {nome:'Agachamento Livre', como:'Flexione quadris e joelhos até onde consegue mantendo boa postura e retorne.', foco:'Peso distribuído nos pés e tronco firme', erro:'Joelhos fechando para dentro ou coluna arredondando.', dica:'Pense em sentar para trás.'},
+  {nome:'Joelho x Cotovelo', como:'Marche e, com o braço contrário, cruze o cotovelo com o joelho.', foco:'Coordenação e resistência', erro:'Fazer lento demais.', dica:'Mantenha as mãos atrás da orelha abrindo os braços.'},
+  {nome:'Corridinho pra Frente/Trás', como:'Alterne deslocamentos curtos para frente e para trás mantendo controle corporal.', foco:'Agilidade e capacidade cardiorrespiratória', erro:'Fazer lento.', dica:'Utilize passadas rápidas e curtas.'},
+  {nome:'Agachamento c/ Kettlebell', como:'Segure o peso junto ao peito e execute o agachamento mantendo o tronco firme.', foco:'Coordenação/quadríceps/glúteo', erro:'Inclinar o tronco para frente ou fechar os joelhos.', dica:'Mantenha o core contraído.'},
+  {nome:'Shoulder Cars', como:'Faça círculos completos com o ombro, controladamente, explorando toda a amplitude sem mover o tronco.', foco:'Mobilidade de ombro', erro:'Compensar com o tronco.', dica:'Movimente apenas a articulação do ombro.'},
+  {nome:'Step Up em Caixa', como:'Suba na caixa utilizando principalmente a força da perna apoiada e desça controladamente.', foco:'Força unilateral e glúteos', erro:'Impulsionar com a perna que está no chão.', dica:'Finalize a subida estendendo totalmente o quadril.'},
+  {nome:'Farmer Walk', como:'Caminhe com postura alta, abdômen contraído, ombros alinhados, segurando a carga firme.', foco:'Core/pegada/estabilidade', erro:'Inclinar o tronco ou balançar o corpo.', dica:'Caminhe como se estivesse equilibrando um copo na cabeça.'},
+  {nome:'Prancha', como:'Sustente o corpo alinhado apoiando antebraços e pés, mantendo a pelve neutra.', foco:'Estabilidade do core', erro:'Elevar ou deixar o quadril cair.', dica:'Respire normalmente mantendo a contração abdominal.'}
+];
+
+// ── DATA: PROGRESSÃO DE CARGA ────────────────────────────────────────────
+var PROGRESSAO = [
+  {id:'puxada-barra', nome:'Puxada Alta c/ Barra'},
+  {id:'puxada-triangulo', nome:'Puxada Alta c/ Triângulo'},
+  {id:'remada-maquina', nome:'Remada na Máquina'},
+  {id:'crucifixo-inverso', nome:'Crucifixo Inverso na Máquina'},
+  {id:'cadeira-extensora', nome:'Cadeira Extensora'},
+  {id:'legpress45', nome:'Legpress 45'},
+  {id:'mesa-flexora', nome:'Mesa Flexora'},
+  {id:'cadeira-adutora', nome:'Cadeira Adutora'},
+  {id:'panturrilha', nome:'Panturrilha'},
+  {id:'peekdeek', nome:'Peekdeek'},
+  {id:'desenvolvimento', nome:'Desenvolvimento'},
+  {id:'elevacao-lateral', nome:'Elevação Lateral'},
+  {id:'biceps-martelo', nome:'Bíceps Martelo'},
+  {id:'triceps-corda', nome:'Tríceps Corda na Polia'},
+  {id:'agachamento-kettlebell', nome:'Agachamento c/ Kettlebell'},
+  {id:'farmer-walk', nome:'Farmer Walk'}
+];
+
+// ── DATA: AVALIAÇÃO ───────────────────────────────────────────────────────
+var EVAL_CATS = ['Frequência','Humor','Energia','Dificuldade','Dor ou desconforto','Sono','Alimentação'];
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+var state = JSON.parse(localStorage.getItem('sabrina-state') || '{}');
+if (!state.currentTreino) state.currentTreino = 'A';
+if (!state.currentWeek) state.currentWeek = 1;
+if (!state.checks) state.checks = {};
+if (!state.loads) state.loads = {};
+if (!state.finished) state.finished = {};
+if (!state.evalWeek) state.evalWeek = 1;
+if (!state.evalNotas) state.evalNotas = {};
+if (!state.evalObs) state.evalObs = {};
+if (!state.peso) state.peso = 79.0;
+
+async function saveState() {
+  state._updated = new Date().toISOString();
+  localStorage.setItem('sabrina-state', JSON.stringify(state));
+  try {
+    await fetch(FIREBASE_URL + '/alunos/' + ALUNO_ID + '/state.json', {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(state)
+    });
+  } catch(e) { console.warn('Firebase offline, salvo localmente.'); }
+}
+
+async function loadFromFirebase() {
+  try {
+    var res = await fetch(FIREBASE_URL + '/alunos/' + ALUNO_ID + '/state.json');
+    if (res.ok) {
+      var d = await res.json();
+      if (d && d._updated && d._updated > (state._updated || '')) {
+        state = d;
+        localStorage.setItem('sabrina-state', JSON.stringify(state));
+      }
+    }
+  } catch(e) {}
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────
+function switchPage(name) {
+  var pages = document.querySelectorAll('.page');
+  for (var i = 0; i < pages.length; i++) pages[i].classList.remove('active');
+  document.getElementById('page-' + name).classList.add('active');
+
+  var tabs = document.querySelectorAll('.tab-item');
+  for (var j = 0; j < tabs.length; j++) tabs[j].classList.remove('active');
+  document.querySelector('.tab-item[data-page="' + name + '"]').classList.add('active');
+
+  if (name === 'guia') renderGuide();
+  if (name === 'avaliacao') renderEval();
+}
+
+// ── TREINO ────────────────────────────────────────────────────────────────
+function renderTreinoSwitch() {
+  var wrap = document.getElementById('treino-switch');
+  wrap.innerHTML = '';
+  var keys = ['A','B','C','D'];
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    var btn = document.createElement('div');
+    btn.className = 'treino-btn' + (state.currentTreino === k ? ' active' : '');
+    btn.textContent = TREINO_LABELS[k];
+    btn.onclick = (function(kk) { return function() { state.currentTreino = kk; renderTreinoSwitch(); renderExercises(); }; })(k);
+    wrap.appendChild(btn);
+  }
+}
+
+function weekKey() {
+  return state.currentTreino + '-' + state.currentWeek;
+}
+
+function renderExercises() {
+  document.getElementById('week-label').textContent = 'Semana ' + state.currentWeek;
+  document.getElementById('week-sub').textContent = 'de ' + TOTAL_WEEKS + ' semanas — ' + TREINO_LABELS[state.currentTreino];
+  document.getElementById('week-prev').disabled = state.currentWeek <= 1;
+  document.getElementById('week-next').disabled = state.currentWeek >= TOTAL_WEEKS;
+
+  var container = document.getElementById('ex-container');
+  container.innerHTML = '';
+  var list = TREINOS[state.currentTreino];
+  var wk = weekKey();
+
+  for (var i = 0; i < list.length; i++) {
+    var ex = list[i];
+    var checkKey = wk + '-' + ex.id;
+    var isChecked = !!state.checks[checkKey];
+    var loadVal = state.loads[ex.id] !== undefined ? state.loads[ex.id] : 0;
+
+    var card = document.createElement('div');
+    card.className = 'ex-card' + (isChecked ? ' done' : '') + (ex.cardio ? ' cardio' : '');
+
+    var metaParts = [ex.series];
+    if (ex.reps) metaParts.push(ex.reps);
+    if (ex.descanso) metaParts.push(ex.descanso.indexOf('circuito') === 0 ? ex.descanso : 'Descanso ' + ex.descanso);
+    var metaStr = metaParts.join(' · ');
+
+    var rpeLabel = (ex.rpe === 'Leve' || ex.rpe === 'Funcional' || ex.rpe === 'Leve/moderado' || ex.rpe === 'Moderado') ? ex.rpe : 'RPE ' + ex.rpe;
+
+    var html = '';
+    html += '<div class="ex-top">';
+    html += '<div class="ex-name-wrap">';
+    html += '<div class="checkbox' + (isChecked ? ' checked' : '') + '" data-check="' + checkKey + '"></div>';
+    html += '<div><div class="ex-name">' + ex.nome + '</div><div class="ex-meta">' + metaStr + '</div><div class="ex-obj">' + ex.obj + '</div></div>';
+    html += '</div>';
+    html += '<div class="rpe-tag">' + rpeLabel + '</div>';
+    html += '</div>';
+
+    if (ex.carga) {
+      var isTracked = PROGRESSAO.some(function(p) { return p.id === ex.id; });
+      html += '<div class="load-row">';
+      html += '<span class="load-label">Carga</span>';
+      html += '<div class="load-btn" data-load="' + ex.id + '" data-dir="-1">−</div>';
+      html += '<div class="load-val">' + loadVal + ' kg</div>';
+      html += '<div class="load-btn" data-load="' + ex.id + '" data-dir="1">+</div>';
+      html += '</div>';
+      if (isTracked) {
+        html += '<div class="prog-note">' + (state.loads[ex.id] !== undefined ? 'Progressão registrada nesta semana.' : 'Ainda sem registro de progressão.') + '</div>';
+      }
+    }
+
+    card.innerHTML = html;
+    container.appendChild(card);
+  }
+
+  var checks = container.querySelectorAll('[data-check]');
+  for (var c = 0; c < checks.length; c++) {
+    checks[c].onclick = function() {
+      var key = this.getAttribute('data-check');
+      state.checks[key] = !state.checks[key];
+      saveState();
+      renderExercises();
+    };
+  }
+  var loadBtns = container.querySelectorAll('[data-load]');
+  for (var l = 0; l < loadBtns.length; l++) {
+    loadBtns[l].onclick = function() {
+      var id = this.getAttribute('data-load');
+      var dir = parseInt(this.getAttribute('data-dir'), 10);
+      var cur = state.loads[id] !== undefined ? state.loads[id] : 0;
+      cur = cur + dir * 2.5;
+      if (cur < 0) cur = 0;
+      state.loads[id] = cur;
+      saveState();
+      renderExercises();
+    };
+  }
+
+  var finBtn = document.getElementById('finish-btn');
+  if (state.finished[wk]) {
+    finBtn.textContent = 'Treino Finalizado ✓';
+    finBtn.classList.add('finished');
+  } else {
+    finBtn.textContent = 'Finalizar Treino';
+    finBtn.classList.remove('finished');
+  }
+}
+
+function changeWeek(dir) {
+  var next = state.currentWeek + dir;
+  if (next < 1 || next > TOTAL_WEEKS) return;
+  state.currentWeek = next;
+  saveState();
+  renderExercises();
+}
+
+function finishTreino() {
+  var wk = weekKey();
+  state.finished[wk] = true;
+  saveState();
+  renderExercises();
+  showToast('Treino finalizado! ✿');
+}
+
+// ── GUIA ──────────────────────────────────────────────────────────────────
+var openGuideId = null;
+function renderGuide() {
+  var container = document.getElementById('guia-container');
+  var query = document.getElementById('guia-search').value.toLowerCase();
+  container.innerHTML = '';
+
+  var filtered = GUIA.filter(function(g) { return g.nome.toLowerCase().indexOf(query) !== -1; });
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty-guide">Nenhum exercício encontrado.</div>';
+    return;
+  }
+
+  for (var i = 0; i < filtered.length; i++) {
+    var g = filtered[i];
+    var isOpen = openGuideId === g.nome;
+    var card = document.createElement('div');
+    card.className = 'guide-card';
+    var html = '';
+    html += '<div class="guide-head" data-guide="' + g.nome + '">';
+    html += '<div class="ex-name">' + g.nome + '</div>';
+    html += '<div class="guide-chevron' + (isOpen ? ' open' : '') + '">▸</div>';
+    html += '</div>';
+    html += '<div class="guide-body' + (isOpen ? ' open' : '') + '">';
+    html += '<div class="guide-body-inner">';
+    html += '<div class="guide-row"><div class="guide-row-label">Como fazer</div><div class="guide-row-text">' + g.como + '</div></div>';
+    html += '<div class="guide-row"><div class="guide-row-label">Foco</div><div class="guide-row-text">' + g.foco + '</div></div>';
+    html += '<div class="guide-row"><div class="guide-row-label">Erro comum</div><div class="guide-row-text">' + g.erro + '</div></div>';
+    html += '<div class="guide-row"><div class="guide-row-label">Dica prática</div><div class="guide-row-text">' + g.dica + '</div></div>';
+    html += '</div></div>';
+    card.innerHTML = html;
+    container.appendChild(card);
+  }
+
+  var heads = container.querySelectorAll('[data-guide]');
+  for (var h = 0; h < heads.length; h++) {
+    heads[h].onclick = function() {
+      var name = this.getAttribute('data-guide');
+      openGuideId = (openGuideId === name) ? null : name;
+      renderGuide();
+    };
+  }
+}
+
+// ── AVALIAÇÃO ─────────────────────────────────────────────────────────────
+function renderEval() {
+  var container = document.getElementById('eval-container');
+  container.innerHTML = '';
+
+  for (var w = 1; w <= TOTAL_WEEKS; w++) {
+    if (!state.evalNotas[w]) state.evalNotas[w] = {};
+    var notas = state.evalNotas[w];
+    var hasObs = state.evalObs[w] && state.evalObs[w].trim().length > 0;
+    var hasAny = Object.keys(notas).length > 0 || hasObs;
+
+    var card = document.createElement('div');
+    card.className = 'eval-week-card';
+
+    var html = '<div class="eval-week-head">';
+    html += '<span class="eval-week-title">Semana ' + w + '</span>';
+    html += '<span class="eval-week-badge' + (hasAny ? ' saved' : '') + '">' + (hasAny ? 'Salvo' : 'Pendente') + '</span>';
+    html += '</div>';
+
+    for (var i = 0; i < EVAL_CATS.length; i++) {
+      var cat = EVAL_CATS[i];
+      var selected = notas[cat] || 0;
+      html += '<div class="eval-cat-block">';
+      html += '<div class="eval-cat-name">' + cat + '</div><div class="nota-row">';
+      for (var n = 1; n <= 5; n++) {
+        html += '<div class="nota-btn' + (selected === n ? ' selected' : '') + '" data-week="' + w + '" data-cat="' + cat + '" data-nota="' + n + '">' + n + '</div>';
+      }
+      html += '</div></div>';
+    }
+
+    html += '<textarea class="eval-week-obs" data-week-obs="' + w + '" rows="2" placeholder="Nota da semana...">' + (state.evalObs[w] || '') + '</textarea>';
+    html += '<button class="eval-week-save" data-week-save="' + w + '">Salvar Semana ' + w + '</button>';
+
+    card.innerHTML = html;
+    container.appendChild(card);
+  }
+
+  var notaBtns = container.querySelectorAll('[data-nota]');
+  for (var b = 0; b < notaBtns.length; b++) {
+    notaBtns[b].onclick = function() {
+      var wk = parseInt(this.getAttribute('data-week'), 10);
+      var cat = this.getAttribute('data-cat');
+      var nota = parseInt(this.getAttribute('data-nota'), 10);
+      if (!state.evalNotas[wk]) state.evalNotas[wk] = {};
+      state.evalNotas[wk][cat] = nota;
+      renderEval();
+    };
+  }
+
+  var saveBtns = container.querySelectorAll('[data-week-save]');
+  for (var s = 0; s < saveBtns.length; s++) {
+    saveBtns[s].onclick = function() {
+      var wk = this.getAttribute('data-week-save');
+      saveEval(wk);
+    };
+  }
+}
+
+function saveEval(week) {
+  var textarea = document.querySelector('[data-week-obs="' + week + '"]');
+  state.evalObs[week] = textarea ? textarea.value : '';
+  saveState();
+  showToast('Semana ' + week + ' salva!');
+  renderEval();
+}
+
+// ── PERFIL ────────────────────────────────────────────────────────────────
+function renderPerfil() {
+  document.getElementById('cur-weight').innerHTML = state.peso.toFixed(1) + '<span style="font-size:16px;color:var(--muted);"> kg</span>';
+}
+
+function adjustWeight(delta) {
+  state.peso = Math.max(30, state.peso + delta);
+  renderPerfil();
+}
+
+function saveWeight() {
+  saveState();
+  var btn = document.getElementById('weight-save-btn');
+  btn.textContent = 'Salvo ✓';
+  btn.classList.add('saved');
+  showToast('Peso atualizado!');
+  setTimeout(function() { btn.textContent = 'Salvar Peso'; btn.classList.remove('saved'); }, 1800);
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2200);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function() {
+  setTimeout(async function() {
+    await loadFromFirebase();
+    document.getElementById('splash').classList.add('hide');
+    document.getElementById('app').classList.add('visible');
+    renderTreinoSwitch();
+    renderExercises();
+    renderPerfil();
+  }, 1400);
+});
+</script>
+</body>
+</html>
